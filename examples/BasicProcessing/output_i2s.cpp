@@ -47,6 +47,8 @@ void audioCallbackPassthrough(int32_t** inputs, int32_t** outputs)
 	{
 		outputs[0][i] = inputs[0][i];
 		outputs[1][i] = inputs[1][i];
+    outputs[2][i] = inputs[2][i];
+		outputs[3][i] = inputs[3][i];
 	}
 }
 
@@ -92,8 +94,11 @@ void AudioOutputI2S::begin()
 void AudioOutputI2S::isr(void)
 {
 	int32_t* dest;
-	int32_t* blockL;
-	int32_t* blockR;
+	int32_t* block1L;
+	int32_t* block1R;
+  int32_t* block2L;
+	int32_t* block2R;
+	
 	uint32_t saddr, offset;
 	bool callUpdate;
 
@@ -116,13 +121,17 @@ void AudioOutputI2S::isr(void)
 		offset = 0;
 	}
 
-	blockL = buffers.readPtr[0];
-	blockR = buffers.readPtr[1];
+	block1L = buffers.readPtr[0];
+	block1R = buffers.readPtr[1];
+  block2L = buffers.readPtr[2];
+	block2R = buffers.readPtr[3];
 
 	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES/2; i++)
 	{
-		dest[2*i] = blockL[i+offset];
-		dest[2*i+1] = blockR[i+offset];
+		dest[2*i] = block1L[i+offset];
+		dest[2*i+1] = block1R[i+offset];
+    dest[2*i+2] = block2L[i+offset];
+		dest[2*i+3] = block2R[i+offset];
 	}
 	
 	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
@@ -195,24 +204,25 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 
 	int rsync = 0;
 	int tsync = 1;
-
+  int channels = 4;
+  int bitdepth = 32;
 	I2S1_TMR = 0;
 	//I2S1_TCSR = (1<<25); //Reset
-	I2S1_TCR1 = I2S_TCR1_RFW(1);
+	I2S1_TCR1 = I2S_TCR1_RFW(channels -1); // 4 FIFI words
 	I2S1_TCR2 = I2S_TCR2_SYNC(tsync) | I2S_TCR2_BCP // sync=0; tx is async;
 		    | (I2S_TCR2_BCD | I2S_TCR2_DIV((1)) | I2S_TCR2_MSEL(1));
 	I2S1_TCR3 = I2S_TCR3_TCE;
-	I2S1_TCR4 = I2S_TCR4_FRSZ((2-1)) | I2S_TCR4_SYWD((32-1)) | I2S_TCR4_MF
+	I2S1_TCR4 = I2S_TCR4_FRSZ(channels -1) | I2S_TCR4_SYWD((bitdepth-1)) | I2S_TCR4_MF //2 Frames?
 		    | I2S_TCR4_FSD | I2S_TCR4_FSE | I2S_TCR4_FSP;
-	I2S1_TCR5 = I2S_TCR5_WNW((32-1)) | I2S_TCR5_W0W((32-1)) | I2S_TCR5_FBT((32-1));
+	I2S1_TCR5 = I2S_TCR5_WNW((bitdepth-1)) | I2S_TCR5_W0W((bitdepth-1)) | I2S_TCR5_FBT((bitdepth-1));
 
 	I2S1_RMR = 0;
 	//I2S1_RCSR = (1<<25); //Reset
-	I2S1_RCR1 = I2S_RCR1_RFW(1);
+	I2S1_RCR1 = I2S_RCR1_RFW(channels -1);
 	I2S1_RCR2 = I2S_RCR2_SYNC(rsync) | I2S_RCR2_BCP  // sync=0; rx is async;
-		    | (I2S_RCR2_BCD | I2S_RCR2_DIV((1)) | I2S_RCR2_MSEL(1));
+		    | (I2S_RCR2_BCD | I2S_RCR2_DIV((0)) | I2S_RCR2_MSEL(1));
 	I2S1_RCR3 = I2S_RCR3_RCE;
-	I2S1_RCR4 = I2S_RCR4_FRSZ((2-1)) | I2S_RCR4_SYWD((32-1)) | I2S_RCR4_MF
+	I2S1_RCR4 = I2S_RCR4_FRSZ(channels -1) | I2S_RCR4_SYWD((bitdepth-1)) | I2S_RCR4_MF
 		    | I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
-	I2S1_RCR5 = I2S_RCR5_WNW((32-1)) | I2S_RCR5_W0W((32-1)) | I2S_RCR5_FBT((32-1));
+	I2S1_RCR5 = I2S_RCR5_WNW((bitdepth-1)) | I2S_RCR5_W0W((bitdepth-1)) | I2S_RCR5_FBT((bitdepth-1));
 }

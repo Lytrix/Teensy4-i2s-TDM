@@ -27,10 +27,11 @@
 #include "AudioConfig.h"
 #include "input_i2s.h"
 
-DMAMEM __attribute__((aligned(32))) static uint64_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) 
+static uint64_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
 BufferQueue AudioInputI2S::buffers;
 DMAChannel AudioInputI2S::dma(false);
-int32_t* outBuffers[2]; // temporary holder for the values returned by getData
+int32_t* outBuffers[4]; // temporary holder for the values returned by getData
 
 void AudioInputI2S::begin()
 {
@@ -39,7 +40,7 @@ void AudioInputI2S::begin()
 	CORE_PIN8_CONFIG  = 3;  //1:RX_DATA0
 	IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2;
 
-	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 0); // source address, read from 0 byte offset as we want the full 32 bits
+	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 0) ; // source address, read from 0 byte offset as we want the full 32 bits
 	dma.TCD->SOFF = 0; // how many bytes to jump from current address on the next move. We're always reading the same register so no jump.
 	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(2) | DMA_TCD_ATTR_DSIZE(2); // 1=16bits, 2=32 bits. size of source, size of dest
 	dma.TCD->NBYTES_MLNO = 4; // number of bytes to move, minor loop.
@@ -63,6 +64,8 @@ int32_t** AudioInputI2S::getData()
 {
 	outBuffers[0] = buffers.readPtr[0];
 	outBuffers[1] = buffers.readPtr[1];
+  outBuffers[2] = buffers.readPtr[2];
+  outBuffers[3] = buffers.readPtr[3];
 	buffers.consume();
 	return outBuffers;
 }
