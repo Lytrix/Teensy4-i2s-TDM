@@ -68,10 +68,10 @@ void setup(void)
     Serial.println("Unable to set slot length.");
   }
   // Set Mode I2S/TDM, BICK Edge falling/rising, SDOut speed slow/fast
-  error = codec.audioFormatMode(AK4619VN::AK_I2S_STEREO, false, false);
+  //error = codec.audioFormatMode(AK4619VN::AK_I2S_STEREO, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_MSB_STEREO, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_TDM256_I2S_32B, false, false);
-  //error = codec.audioFormatMode(AK4619VN::AK_TDM128_I2S_32B, true, false);
+  error = codec.audioFormatMode(AK4619VN::AK_TDM128_I2S_32B, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_TDM128_MSB_32B, true, false);
   
   if(error){
