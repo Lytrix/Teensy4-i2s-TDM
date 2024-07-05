@@ -174,7 +174,7 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	//PLL:
 	int fs = SAMPLERATE;
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
-	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
+	int n1 = 16; //SAI prescaler 4 => (n1*n2) = multiple of 4
 	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
 
 	double C = ((double)fs * 256 * n1 * n2) / 24000000;
@@ -220,7 +220,7 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	//I2S1_RCSR = (1<<25); //Reset
 	I2S1_RCR1 = I2S_RCR1_RFW(channels -1);
 	I2S1_RCR2 = I2S_RCR2_SYNC(rsync) | I2S_RCR2_BCP  // sync=0; rx is async;
-		    | (I2S_RCR2_BCD | I2S_RCR2_DIV((0)) | I2S_RCR2_MSEL(1));
+		    | (I2S_RCR2_BCD | I2S_RCR2_DIV((1)) | I2S_RCR2_MSEL(1));
 	I2S1_RCR3 = I2S_RCR3_RCE;
 	I2S1_RCR4 = I2S_RCR4_FRSZ(channels -1) | I2S_RCR4_SYWD((bitdepth-1)) | I2S_RCR4_MF
 		    | I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;

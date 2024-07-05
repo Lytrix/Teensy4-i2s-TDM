@@ -16,15 +16,16 @@ void processAudio(int32_t** inputs, int32_t** outputs)
   {
     // use can use regular sinf() as well, but it's highly recommended 
     // to use these optimised arm-specific functions whenever possible
-    int sig = (int)(arm_sin_f32(acc * 0.01f * 2.0f * M_PI) * 1000000000.0f);
-    
-    outputs[0][i] = inputs[0][i] + sig;
-    outputs[1][i] = inputs[1][i] + sig;
-    outputs[2][i] = inputs[2][i] + sig;
-    outputs[3][i] = inputs[3][i] + sig;
+    //int sig = (int)(arm_sin_f32(acc * 0.001f * 2.0f * M_PI) * 100000000.0f);
+                                //speed                         amplitude
+    int sig = 5;
+    outputs[0][i] = -(inputs[0][i]);// + sig;
+    outputs[1][i] = -inputs[0][i];// + sig;
+    //outputs[2][i] = inputs[2][i] + sig;
+    //outputs[3][i] = inputs[3][i] + sig;
     acc++;
-    if (acc >= 100)
-      acc -= 100;
+    if (acc >= 20000)
+      acc -= 20000;
   }
 }
 AK4619VN codec(&Wire, AK4619VN_ADDR);
@@ -62,15 +63,15 @@ void setup(void)
     Serial.println("Unable to set codec PWR");
   }
   // Set Slot start (LR (false) or Slot length) and Slot Length for DAC 1&2 and ADC1&2
-  error = codec.audioFormatSlotLen(AK4619VN::AK_SLOT, AK4619VN::AK_32BIT, AK4619VN::AK_24BIT);
+  error = codec.audioFormatSlotLen(AK4619VN::AK_LR, AK4619VN::AK_32BIT, AK4619VN::AK_24BIT);
   if(error){
     Serial.println("Unable to set slot length.");
   }
   // Set Mode I2S/TDM, BICK Edge falling/rising, SDOut speed slow/fast
-  //error = codec.audioFormatMode(AK4619VN::AK_I2S_STEREO, false, false);
+  error = codec.audioFormatMode(AK4619VN::AK_I2S_STEREO, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_MSB_STEREO, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_TDM256_I2S_32B, false, false);
-  error = codec.audioFormatMode(AK4619VN::AK_TDM128_I2S_32B, true, false);
+  //error = codec.audioFormatMode(AK4619VN::AK_TDM128_I2S_32B, true, false);
   //error = codec.audioFormatMode(AK4619VN::AK_TDM128_MSB_32B, true, false);
   
   if(error){
