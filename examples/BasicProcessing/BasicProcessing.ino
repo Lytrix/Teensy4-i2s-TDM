@@ -18,11 +18,11 @@ void processAudio(int32_t** inputs, int32_t** outputs)
     // to use these optimised arm-specific functions whenever possible
     //int sig = (int)(arm_sin_f32(acc * 0.001f * 2.0f * M_PI) * 100000000.0f);
                                 //speed                         amplitude
-    int sig = 5;
-    outputs[0][i] = -(inputs[0][i]);// + sig;
-    outputs[1][i] = -inputs[0][i];// + sig;
-    //outputs[2][i] = inputs[2][i] + sig;
-    //outputs[3][i] = inputs[3][i] + sig;
+    //int sig = 5;
+    outputs[0][i] = -inputs[0][i];// + sig;
+    outputs[1][i] = -inputs[1][i];// + sig;
+    outputs[2][i] = -inputs[2][i];// + sig;
+    outputs[3][i] = -inputs[3][i];// + sig;
     acc++;
     if (acc >= 20000)
       acc -= 20000;
@@ -42,7 +42,7 @@ void setup(void)
   // Enable the Audio codec
   pinMode(22, OUTPUT); //PWN on
   digitalWrite(22, HIGH);
-  delay(200);
+  delay(1000);
   
   codec.begin(18, 19); // SDA, SCL for Teensy 4.1
   /*    pin  6 : SDIN
@@ -62,17 +62,19 @@ void setup(void)
   if(error){
     Serial.println("Unable to set codec PWR");
   }
-  // Set Slot start (LR (false) or Slot length) and Slot Length for DAC 1&2 and ADC1&2
-  error = codec.audioFormatSlotLen(AK4619VN::AK_LR, AK4619VN::AK_32BIT, AK4619VN::AK_24BIT);
-  if(error){
-    Serial.println("Unable to set slot length.");
-  }
-  // Set Mode I2S/TDM, BICK Edge falling/rising, SDOut speed slow/fast
+
+  // Set Slot start (LR (false) or Slot length), BICK Edge falling/rising, SDOut speed slow/fast
   //error = codec.audioFormatMode(AK4619VN::AK_I2S_STEREO, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_MSB_STEREO, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_TDM256_I2S_32B, false, false);
   error = codec.audioFormatMode(AK4619VN::AK_TDM128_I2S_32B, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_TDM128_MSB_32B, true, false);
+  
+    // Set TDM mode and Slot Length for DAC 1&2 and ADC1&2
+  error = codec.audioFormatSlotLen(AK4619VN::AK_SLOT, AK4619VN::AK_32BIT, AK4619VN::AK_24BIT);
+  if(error){
+    Serial.println("Unable to set slot length.");
+  }
   
   if(error){
     Serial.println("Unable to set audio format mode.");
@@ -110,7 +112,7 @@ void setup(void)
     Serial.println("Unable to set DAC input configuration.");
   }
   //DAC2 to SDOUT2, DAC1 to SDOUT1
-  error = codec.outputConf(AK4619VN::AK_OUT_SDIN1, AK4619VN::AK_OUT_SDIN1); 
+  error = codec.outputConf(AK4619VN::AK_OUT_SDIN2, AK4619VN::AK_OUT_SDIN1); 
   //error = codec.outputConf(AK4619VN::AK_OUT_SDOUT1, AK4619VN::AK_OUT_SDOUT1); 
   if(error){
     Serial.println("Unable to set DAC input configuration.");
@@ -121,14 +123,14 @@ void setup(void)
   if(error){
     Serial.println("Unable to clear codec reset state.");
   }
-  delay(100);
-  Serial.println("Audio Codec Setup done.");
-  
+  delay(500);
+  Serial.println("Audio Codec Setup completed:");
+  delay(500);
   //Verify settings
   codec.printRegs(0x0, 21);
 
   // need to wait a bit before configuring codec, otherwise something weird happens and there's no output...
-  delay(1000); 
+  // delay(1000); 
   // Enable the audio CODEC and set the volume
   //audioShield.enable();
   //audioShield.volume(0.5);

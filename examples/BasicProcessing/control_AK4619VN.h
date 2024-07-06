@@ -90,13 +90,14 @@ public:
         AK_TDM256_MSB_32B = 0x3F,   // 1 111 11 X X 
     } audio_iface_format_t;
 
-    uint8_t audioFormatMode(audio_iface_format_t FORMAT, bool BICK_RISING, bool SDOUT_FAST_MODE);
-
     typedef enum{
         AK_LR = 0x0,
         AK_SLOT = 0x01
     } slot_start_t;
 
+    uint8_t audioFormatMode(audio_iface_format_t FORMAT, bool BICK_RISING, bool SDOUT_FAST_MODE);
+
+    
     //############### 
     typedef enum{
         AK_24BIT = 0x0,

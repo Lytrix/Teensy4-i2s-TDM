@@ -185,7 +185,7 @@ uint8_t AK4619VN::audioFormatSlotLen(slot_start_t SLOT, data_bit_length_t IDL, d
     return error;
   }
   
-  return (writeReg(AUDFORM2, regval));
+  return (writeReg(AUDFORM2, 0b00011100));
   
 }
 
@@ -200,7 +200,7 @@ uint8_t AK4619VN::audioFormatMode(audio_iface_format_t FORMAT, bool BICK_RISING,
     return error;
   }
   //Clear upper 6 bits, shift FORMAT by 2 and set it
-  // regval &= 0x03;
+  //regval &= 0x000000000;
   regval = (FORMAT << 2 | BICK_RISING << 1 | SDOUT_FAST_MODE);
   
   // regval1 &= ~(0x08); //Mask 4th bit and NOT it

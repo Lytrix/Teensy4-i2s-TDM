@@ -7,8 +7,9 @@ class BufferQueue
 public:
 	int32_t data1Left[AUDIO_BLOCK_SAMPLES * BUFFER_QUEUE_SIZE];
 	int32_t data1Right[AUDIO_BLOCK_SAMPLES * BUFFER_QUEUE_SIZE];
-  int32_t data2Left[AUDIO_BLOCK_SAMPLES * BUFFER_QUEUE_SIZE];
+	int32_t data2Left[AUDIO_BLOCK_SAMPLES * BUFFER_QUEUE_SIZE];
 	int32_t data2Right[AUDIO_BLOCK_SAMPLES * BUFFER_QUEUE_SIZE];
+
 	uint8_t readPos = 0;
 	uint8_t writePos = 0;
 	int available = 0;
@@ -20,12 +21,14 @@ public:
 	{
 		writePtr[0] = &data1Left[writePos * AUDIO_BLOCK_SAMPLES];
 		writePtr[1] = &data1Right[writePos * AUDIO_BLOCK_SAMPLES];
-		writePtr[2] = &data2Left[writePos * AUDIO_BLOCK_SAMPLES];
+    writePtr[2] = &data2Left[writePos * AUDIO_BLOCK_SAMPLES];
 		writePtr[3] = &data2Right[writePos * AUDIO_BLOCK_SAMPLES];
+
 		readPtr[0] = &data1Left[readPos * AUDIO_BLOCK_SAMPLES];
 		readPtr[1] = &data1Right[readPos * AUDIO_BLOCK_SAMPLES];
     readPtr[2] = &data2Left[readPos * AUDIO_BLOCK_SAMPLES];
-    readPtr[3] = &data2Right[readPos * AUDIO_BLOCK_SAMPLES];
+		readPtr[3] = &data2Right[readPos * AUDIO_BLOCK_SAMPLES];
+
         for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES * BUFFER_QUEUE_SIZE; i++)
         {
             data1Left[i] = 0;
@@ -47,8 +50,8 @@ public:
 		writePos = (writePos + 1) % BUFFER_QUEUE_SIZE;
 		writePtr[0] = &data1Left[writePos * AUDIO_BLOCK_SAMPLES];
 		writePtr[1] = &data1Right[writePos * AUDIO_BLOCK_SAMPLES];
-		writePtr[2] = &data1Left[writePos * AUDIO_BLOCK_SAMPLES];
-		writePtr[3] = &data1Right[writePos * AUDIO_BLOCK_SAMPLES];
+    writePtr[2] = &data2Left[writePos * AUDIO_BLOCK_SAMPLES];
+		writePtr[3] = &data2Right[writePos * AUDIO_BLOCK_SAMPLES];
 		available++;
 
 		// writing over the tail of the circular buffer. Should never happen as read and write should be synchronous!
@@ -66,8 +69,8 @@ public:
 		readPos = (readPos + 1) % BUFFER_QUEUE_SIZE;
 		readPtr[0] = &data1Left[readPos * AUDIO_BLOCK_SAMPLES];
 		readPtr[1] = &data1Right[readPos * AUDIO_BLOCK_SAMPLES];
-    readPtr[2] = &data2Left[readPos * AUDIO_BLOCK_SAMPLES];
-		readPtr[3] = &data2Right[readPos * AUDIO_BLOCK_SAMPLES];
+    readPtr[2] = &data1Left[readPos * AUDIO_BLOCK_SAMPLES];
+		readPtr[3] = &data1Right[readPos * AUDIO_BLOCK_SAMPLES];
 		available--;
 	}
 };

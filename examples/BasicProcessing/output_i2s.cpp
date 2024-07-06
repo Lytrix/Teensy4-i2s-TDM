@@ -109,6 +109,7 @@ void AudioOutputI2S::isr(void)
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
 		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+    // dest = (int32_t *)((uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2);
 		callUpdate = true;
 		offset = AUDIO_BLOCK_SAMPLES / 2;
 	}
@@ -128,10 +129,10 @@ void AudioOutputI2S::isr(void)
 
 	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES/2; i++)
 	{
-		dest[2*i] = block1L[i+offset];
-		dest[2*i+1] = block1R[i+offset];
-    dest[2*i+2] = block2L[i+offset];
-		dest[2*i+3] = block2R[i+offset];
+		dest[4*i/2] = block1L[i+offset];
+		dest[4*i/2+1] = block1R[i+offset];
+    dest[4*i/2+2] = block2L[i+offset];
+		dest[4*i/2+3] = block2R[i+offset];
 	}
 	
 	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
