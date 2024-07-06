@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #define SAMPLERATE 192000
-#define BIT_DEPTH 24
+#define BIT_DEPTH 32
 #define AUDIO_BLOCK_SAMPLES 128
 
 #define SAMPLE_16_MAX INT16_MAX

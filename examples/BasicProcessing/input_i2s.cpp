@@ -73,7 +73,7 @@ void AudioInputI2S::isr(void)
 {
 	uint32_t daddr, offset;
 	const int32_t *src;
-	int32_t *dest_left, *dest_right;
+	int32_t *dest1_left, *dest1_right;
   int32_t *dest2_left, *dest2_right;
   
 	bool incrementQueue;
@@ -98,21 +98,21 @@ void AudioInputI2S::isr(void)
 		incrementQueue = false;
 	}
 	
-	int32_t* left = buffers.writePtr[0];
-	int32_t* right = buffers.writePtr[1];
-  int32_t* left2 = buffers.writePtr[2];
+	int32_t* left1  = buffers.writePtr[0];
+	int32_t* right1 = buffers.writePtr[1];
+  int32_t* left2  = buffers.writePtr[2];
 	int32_t* right2 = buffers.writePtr[3];
-	dest_left = &(left[offset]);
-	dest_right = &(right[offset]);
-  dest2_left = &(left2[offset]);
+	dest1_left  = &(left1[offset]);
+	dest1_right = &(right1[offset]);
+  dest2_left  = &(left2[offset]);
 	dest2_right = &(right2[offset]);
 
 	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES/2; i++)
 	{
-		dest_left[i] = src[4*i/2];
-		dest_right[i] = src[4*i/2+1];
-    dest2_right[i] = src[4*i/2+2];
-    dest2_right[i] = src[4*i/2+3];
+		dest1_left[i]  = src[4 * i];
+		dest1_right[i] = src[4 * i + 1];
+    dest2_left[i]  = src[4 * i + 2];
+    dest2_right[i] = src[4 * i + 3];
 	}
 
 	if (incrementQueue)

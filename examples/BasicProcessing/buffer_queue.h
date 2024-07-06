@@ -69,8 +69,8 @@ public:
 		readPos = (readPos + 1) % BUFFER_QUEUE_SIZE;
 		readPtr[0] = &data1Left[readPos * AUDIO_BLOCK_SAMPLES];
 		readPtr[1] = &data1Right[readPos * AUDIO_BLOCK_SAMPLES];
-    readPtr[2] = &data1Left[readPos * AUDIO_BLOCK_SAMPLES];
-		readPtr[3] = &data1Right[readPos * AUDIO_BLOCK_SAMPLES];
+    readPtr[2] = &data2Left[readPos * AUDIO_BLOCK_SAMPLES];
+		readPtr[3] = &data2Right[readPos * AUDIO_BLOCK_SAMPLES];
 		available--;
 	}
 };
