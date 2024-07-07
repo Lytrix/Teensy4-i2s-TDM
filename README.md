@@ -19,7 +19,7 @@ Download this repo as a zip and add the zip file as a zip library in Arduino IDE
 ## Features
 
 * 2 channel i2s
-* 4 channel TDM (more channels can be added by duplicating the channel logic)
+* 4 channel TDM (more channels can be added by duplicating the channel logic in input_i2s.cpp, output_i2s.cpp and buffer_queue.h)
 * 16/24/32 Bit, 44.1/48/96/192 Khz audio processing
 * Completely stand-alone library, does not depend on the Teensy Audio library.
 * Retains some of the Codec controllers from the Audio Library like DMA.
@@ -64,7 +64,7 @@ At 192khz 128fs:
 
     MCLK    25.496 Mhz
     BCLK    25.496 Mhz
-    LRCLK   192 Khz
+    LRCLK   192.0 Khz
 
 ## Notes
 
