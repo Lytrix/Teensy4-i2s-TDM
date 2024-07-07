@@ -86,8 +86,17 @@ void AudioOutputI2S::begin()
 	dma.enable();
 
 	// Enabled transmitting and receiving
-	I2S1_RCSR |= I2S_RCSR_RE | I2S_RCSR_BCE;
-	I2S1_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
+
+  // Receive Control  : Enable resets, interrupt, error flag fields.
+	I2S1_RCSR = 
+    I2S_RCSR_RE       // Receiver Enabled
+  | I2S_RCSR_BCE;     // Receiver Bit Clock Enabled
+
+  // Transmit Control : Enable resets, interrupt, error flag fields.
+	I2S1_TCSR = 
+    I2S_TCSR_TE       // Transmitter Enabled
+  | I2S_TCSR_BCE      // Transmitter Bit Clock Enabled
+  | I2S_TCSR_FRDE;    // FIFO Request Interrupt Enable
 	dma.attachInterrupt(isr);
 }
 
@@ -123,6 +132,7 @@ void AudioOutputI2S::isr(void)
 
   block[0] = buffers.readPtr[0];
 	block[1] = buffers.readPtr[1];
+
   if (CHANNELS > 2) {
     block[2] = buffers.readPtr[2];
 	  block[3] = buffers.readPtr[3];
@@ -179,7 +189,7 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	//PLL:
 	int fs = SAMPLERATE;
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
-	int n1 = 16; //SAI prescaler 4 => (n1*n2) = multiple of 4
+	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
 	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
 
 	double C = ((double)fs * 256 * n1 * n2) / 24000000;
@@ -188,7 +198,7 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	int c1 = C * c2 - (c0 * c2);
 	set_audioClock(c0, c1, c2);
 
-	// clear SAI1_CLK register locations
+	// Clear SAI1_CLK register locations
 	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
 		   | CCM_CSCMR1_SAI1_CLK_SEL(2); // &0x03 // (0,1,2): PLL3PFD0, PLL5, PLL4
 	CCM_CS1CDR = (CCM_CS1CDR & ~(CCM_CS1CDR_SAI1_CLK_PRED_MASK | CCM_CS1CDR_SAI1_CLK_PODF_MASK))
@@ -207,27 +217,70 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	}
 	CORE_PIN21_CONFIG = 3;  //1:RX_BCLK
 
-	int rsync = 0;
-	int tsync = 1;
-  int channels = 4;
-  int bitdepth = 32;
-	I2S1_TMR = 0;
-	//I2S1_TCSR = (1<<25); //Reset
-	I2S1_TCR1 = I2S_TCR1_RFW(channels -1); // 4 FIFI words
-	I2S1_TCR2 = I2S_TCR2_SYNC(tsync) | I2S_TCR2_BCP // sync=0; tx is async;
-		    | (I2S_TCR2_BCD | I2S_TCR2_DIV((1)) | I2S_TCR2_MSEL(1));
-	I2S1_TCR3 = I2S_TCR3_TCE;
-	I2S1_TCR4 = I2S_TCR4_FRSZ(channels -1) | I2S_TCR4_SYWD((bitdepth-1)) | I2S_TCR4_MF //2 Frames?
-		    | I2S_TCR4_FSD | I2S_TCR4_FSE | I2S_TCR4_FSP;
-	I2S1_TCR5 = I2S_TCR5_WNW((bitdepth-1)) | I2S_TCR5_W0W((bitdepth-1)) | I2S_TCR5_FBT((bitdepth-1));
+  // Synchronous Audio Interface (SAI) Setup
+  // See page 2005: https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf
 
-	I2S1_RMR = 0;
-	//I2S1_RCSR = (1<<25); //Reset
-	I2S1_RCR1 = I2S_RCR1_RFW(channels -1);
-	I2S1_RCR2 = I2S_RCR2_SYNC(rsync) | I2S_RCR2_BCP  // sync=0; rx is async;
-		    | (I2S_RCR2_BCD | I2S_RCR2_DIV((1)) | I2S_RCR2_MSEL(1));
-	I2S1_RCR3 = I2S_RCR3_RCE;
-	I2S1_RCR4 = I2S_RCR4_FRSZ(channels -1) | I2S_RCR4_SYWD((bitdepth-1)) | I2S_RCR4_MF
-		    | I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
-	I2S1_RCR5 = I2S_RCR5_WNW((bitdepth-1)) | I2S_RCR5_W0W((bitdepth-1)) | I2S_RCR5_FBT((bitdepth-1));
+  // Transmit Mask
+  I2S1_TMR = 0;                 // Allows masked words in each frame to change from frame to frame. 0=no mask
+
+	// SAI Transmit Configuration 1: Watermark level for all enabled transmit channels
+  I2S1_TCR1 = I2S_TCR1_RFW(CHANNELS - 1); // Transmit FIFO Watermark
+
+  // SAI Transmit Configuration 2: SYNC mode and clock setting fields
+	I2S1_TCR2 = 
+    I2S_TCR2_SYNC(1)            // Synchronous Mode     : 1=sync, 0=async
+  | I2S_TCR2_BCP                // Bit Clock Polarity   : 1=Outputs falling edge, inputs on rising edge, 0 is inverse.
+	| I2S_TCR2_BCD                // Bit Clock Direction  : 1=Bit clock is generated internally in Master mode. 0=Slave, externally
+  | I2S_TCR2_DIV(0)             // Bit Clock Divide     : Divides the mclk as (DIV + 1) * 2
+  | I2S_TCR2_MSEL(1);           // Master Clock Select  : 0=bus clock, 1=I2S0_MCLK
+	
+  // SAI Transmit Configuration 3: Transmit channel settings
+  I2S1_TCR3 = I2S_TCR3_TCE;     // Transmit Channel Enable: Sets the channel to transmit operation.
+  
+  // SAI Transmit Configuration 4: FIFO Combine Mode, FIFO Packing Mode, and frame sync settings.
+	I2S1_TCR4 = 
+    I2S_TCR4_FRSZ(CHANNELS - 1) // Frame Size           : Number of words (=channels) in each frame (minus one)
+  | I2S_TCR4_SYWD(BIT_DEPTH -1) // Sync Width           : Length of the frame sync in number of bit clocks (minus one)
+  | I2S_TCR4_MF                 // MSB First            : 0=LSB First, 1=MSB First
+  | I2S_TCR4_FSE                // Frame Sync Early     : 1=One bit before the frame, 0=With the first bit of the frame
+  | I2S_TCR4_FSP                // Frame Sync Polarity  : 1=Active low, 0=Active high
+  | I2S_TCR4_FSD;               // Frame Sync Direction : 1=Internally in Master mode, 0=Externally in Slave mode.
+  // SAI Transmit Configuration 5: Word width and bit index settings
+	I2S1_TCR5 = 
+    I2S_TCR5_W0W(BIT_DEPTH - 1)  // Word 0 Width        : Number of Bits per word, first frame
+  | I2S_TCR5_WNW(BIT_DEPTH - 1)  // Word N Width        : Number of Bits per word, nth frame
+  | I2S_TCR5_FBT(BIT_DEPTH - 1); // First Bit Shifted   : Bit index for the first bit for each word in the frame minus one.
+
+  // Receive Mask
+	I2S1_RMR = 0;                 // Allows masked words in each frame to change from frame to frame. 0=no mask
+	
+  // SAI Receive Configuration 1
+	I2S1_RCR1 = I2S_RCR1_RFW(CHANNELS -1); // Transmit FIFO Watermark, Frame size in words (minus one)
+
+  // SAI Receive Configuration 2
+	I2S1_RCR2 = 
+    I2S_RCR2_SYNC(0)             // Synchronous Mode     : 1=sync with transmitter, 0=async
+  | I2S_RCR2_BCP                 // Bit Clock Polarity   : 1=Outputs falling edge, inputs on rising edge, 0 is inverse.
+	| I2S_RCR2_BCD                 // Bit Clock Direction  : 1=Bit clock is generated internally in Master mode. 0=Slave, externally
+  | I2S_RCR2_DIV(0)              // Bit Clock Divide     : Divides the mclk as (DIV + 1) * 2
+  | I2S_RCR2_MSEL(1);            // Master Clock Select  : 0=bus clock, 1=I2S0_MCLK
+	
+   // SAI Receive Configuration 3
+	I2S1_RCR3 = I2S_RCR3_RCE;      // Receive Channel Enable: Sets the channel to receive operation.
+
+   // SAI Receive Configuration 4
+	I2S1_RCR4 = 
+    I2S_RCR4_FRSZ(CHANNELS - 1)   // Frame Size           : Number of words (=channels) in each frame (minus one)
+  | I2S_RCR4_SYWD(BIT_DEPTH -1)   // Sync Width           : Length of the frame sync in number of bit clocks (minus one)
+  | I2S_RCR4_MF                   // MSB First            : 0=LSB First, 1=MSB First
+	| I2S_RCR4_FSE                  // Frame Sync Early     : 1=One bit before the frame, 0=With the first bit of the frame
+  | I2S_RCR4_FSD                  // Frame Sync Direction : 1=Internally in Master mode, 0=Externally in Slave mode.
+  | I2S_RCR4_FSP;                 // Frame Sync Polarity  : 1=Active low, 0=Active high 
+
+   // SAI Receive Configuration 5
+	I2S1_RCR5 = 
+    I2S_RCR5_WNW(BIT_DEPTH - 1)   // Word 0 Width        : Number of Bits per word, first frame
+  | I2S_RCR5_W0W(BIT_DEPTH - 1)   // Word N Width        : Number of Bits per word, nth frame
+  | I2S_RCR5_FBT(BIT_DEPTH - 1);  // First Bit Shifted   : Bit index for the first bit for each word in the frame minus one.
+
 }

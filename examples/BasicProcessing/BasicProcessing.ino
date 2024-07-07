@@ -7,6 +7,7 @@
 #include "output_i2s.h"
 
 //AudioControlSGTL5000 audioShield;
+AK4619VN codec(&Wire, AK4619VN_ADDR);
 
 int acc = 0;
 
@@ -18,7 +19,7 @@ void processAudio(int32_t** inputs, int32_t** outputs)
     // to use these optimised arm-specific functions whenever possible
     //int sig = (int)(arm_sin_f32(acc * 0.001f * 2.0f * M_PI) * 100000000.0f);
                                 //speed                         amplitude
-    //int sig = 5;
+
     outputs[0][i] = -inputs[0][i];// + sig;
     outputs[1][i] = -inputs[1][i];// + sig;
     outputs[2][i] = -inputs[2][i];// + sig;
@@ -28,7 +29,31 @@ void processAudio(int32_t** inputs, int32_t** outputs)
       acc -= 20000;
   }
 }
-AK4619VN codec(&Wire, AK4619VN_ADDR);
+
+// Use pin9 to test Clock Frequencies on pin 20/21/23
+// https://www.pjrc.com/teensy/td_libs_FreqCount.html    
+void debugClockFreq() {
+  if (FreqCount.available()) {
+    unsigned long count = FreqCount.read();
+    Serial.print("Clock Frequency: ");
+    Serial.print(count/1000);
+    Serial.println("kHz");
+  }
+}
+
+// Show CPU usage and processing time
+void debugCPU() {
+  delay(1000);
+  float avg = Timers::GetPeak(Timers::TIMER_TOTAL);
+  float period = Timers::GetAvgPeriod();
+  float percent = avg / period * 100;
+  Serial.print("CPU Usage: ");
+  Serial.print(percent, 4);
+  Serial.print("%");
+  Serial.print(" -- Processing period: ");
+  Serial.print(period/1000, 3);
+  Serial.println("ms");
+}
 
 void setup(void)
 {
@@ -141,18 +166,6 @@ void setup(void)
 
 void loop(void)
 {
-  delay(1000);
-  float avg = Timers::GetPeak(Timers::TIMER_TOTAL);
-  float period = Timers::GetAvgPeriod();
-  float percent = avg / period * 100;
-  Serial.print("CPU Usage: ");
-  Serial.print(percent, 4);
-  Serial.print("%");
-  Serial.print(" -- Processing period: ");
-  Serial.print(period/1000, 3);
-  Serial.println("ms");
-  if (FreqCount.available()) {
-    unsigned long count = FreqCount.read();
-    Serial.println(count);
-  }
+  debugCPU();
+  debugClockFreq();
 }

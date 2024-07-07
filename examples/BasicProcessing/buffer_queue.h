@@ -1,6 +1,8 @@
 #pragma once
 
-// Circular queue of buffers used to produce and consume new blocks of audio data coming from and going to the I2S bus.
+// Circular queue of buffers used to produce and consume new blocks of audio data 
+// coming from and going to the I2S bus. 
+// Current setup is working for 2 channels using i2s or TDM for 4 channels.
 class BufferQueue
 {
 #define BUFFER_QUEUE_SIZE 3
@@ -18,15 +20,13 @@ public:
 		writePtr[0] = &channel[0][writePos * AUDIO_BLOCK_SAMPLES];
 		writePtr[1] = &channel[1][writePos * AUDIO_BLOCK_SAMPLES];
     
-    if (CHANNELS > 2) {
-      writePtr[2] = &channel[2][writePos * AUDIO_BLOCK_SAMPLES];
-		  writePtr[3] = &channel[3][writePos * AUDIO_BLOCK_SAMPLES];
-    }
-
-		readPtr[0] = &channel[0][readPos * AUDIO_BLOCK_SAMPLES];
+    readPtr[0] = &channel[0][readPos * AUDIO_BLOCK_SAMPLES];
 		readPtr[1] = &channel[1][readPos * AUDIO_BLOCK_SAMPLES];
     
     if (CHANNELS > 2) {
+      writePtr[2] = &channel[2][writePos * AUDIO_BLOCK_SAMPLES];
+		  writePtr[3] = &channel[3][writePos * AUDIO_BLOCK_SAMPLES];
+
       readPtr[2] = &channel[2][readPos * AUDIO_BLOCK_SAMPLES];
 		  readPtr[3] = &channel[3][readPos * AUDIO_BLOCK_SAMPLES];
      }
