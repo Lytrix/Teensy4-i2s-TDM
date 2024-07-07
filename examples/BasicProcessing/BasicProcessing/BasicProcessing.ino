@@ -15,15 +15,20 @@ void processAudio(int32_t** inputs, int32_t** outputs)
 {
   for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES; i++)
   {
-    // use can use regular sinf() as well, but it's highly recommended 
+ 
+    // Generate Sine Wave 1V sine wave and  with passthrough audio:
+    
+    // You can use regular sinf() as well, but it's highly recommended 
     // to use these optimised arm-specific functions whenever possible
-    //int sig = (int)(arm_sin_f32(acc * 0.001f * 2.0f * M_PI) * 100000000.0f);
-                                //speed                         amplitude
+    int sig = (int)(arm_sin_f32(acc * 0.001f * 2.0f * M_PI) * 100000000.0f);
 
-    outputs[0][i] = -inputs[0][i];// + sig;
-    outputs[1][i] = -inputs[1][i];// + sig;
-    outputs[2][i] = -inputs[2][i];// + sig;
-    outputs[3][i] = -inputs[3][i];// + sig;
+    outputs[0][i] = -inputs[0][i] + sig;
+    outputs[1][i] = -inputs[1][i] + sig;
+    
+    if (CHANNELS > 2) {
+      outputs[2][i] = -inputs[2][i] + sig;
+      outputs[3][i] = -inputs[3][i] + sig;
+    }  
     acc++;
     if (acc >= 20000)
       acc -= 20000;
