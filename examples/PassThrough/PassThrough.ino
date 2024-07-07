@@ -22,6 +22,7 @@ void processAudio(int32_t** inputs, int32_t** outputs)
       outputs[2][i] = -inputs[2][i];
       outputs[3][i] = -inputs[3][i];
     }  
+  }
 }
 
 // Use pin9 to test Clock Frequencies on pin 20/21/23

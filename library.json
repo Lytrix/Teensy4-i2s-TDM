@@ -1,22 +1,22 @@
 {
-  "name": "Teensy 4 I2S",
+  "name": "Teensy 4 I2S TDM",
   "frameworks": "Arduino",
   "platforms": "Teensy",
   "keywords": "sound, audio, effect",
-  "description": "Teensy 4 I2S Audio Library",
-  "url": "https://github.com/ValdemarOrn/Teensy4i2s",
-  "version": "0.1",
+  "description": "Teensy 4 I2S TDM Audio Library",
+  "url": "https://github.com/lytrix/Teensy4i2s",
+  "version": "0.2",
   "export": {
   },
   "authors":
   {
-    "name": "Valdemar Erlingsson",
+    "name":  "Valdemar Erlingsson, Eelke Jager",
     "maintainer": true
   },
   "repository":
   {
     "type": "git",
-    "url": "https://github.com/ValdemarOrn"
+    "url": "https://github.com/Lytrix"
   },
   "dependencies":
   {
