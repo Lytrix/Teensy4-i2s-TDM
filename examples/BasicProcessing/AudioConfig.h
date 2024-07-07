@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#define CHANNELS 4
 #define SAMPLERATE 192000
 #define BIT_DEPTH 32
 #define AUDIO_BLOCK_SAMPLES 128

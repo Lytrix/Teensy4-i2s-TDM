@@ -45,11 +45,14 @@ void audioCallbackPassthrough(int32_t** inputs, int32_t** outputs)
 {
 	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES; i++)
 	{
-		outputs[0][i] = inputs[0][i];
+    outputs[0][i] = inputs[0][i];
 		outputs[1][i] = inputs[1][i];
-    outputs[2][i] = inputs[2][i];
-		outputs[3][i] = inputs[3][i];
-	}
+    
+    if (CHANNELS > 2) {
+      outputs[2][i] = inputs[2][i];
+		  outputs[3][i] = inputs[3][i];
+    }
+  }
 }
 
 void (*i2sAudioCallback)(int32_t** inputs, int32_t** outputs) = audioCallbackPassthrough;
@@ -94,11 +97,7 @@ void AudioOutputI2S::begin()
 void AudioOutputI2S::isr(void)
 {
 	int32_t* dest;
-	int32_t* block1L;
-	int32_t* block1R;
-  int32_t* block2L;
-	int32_t* block2R;
-	
+  int32_t* block[CHANNELS];	
 	uint32_t saddr, offset;
 	bool callUpdate;
 
@@ -122,18 +121,23 @@ void AudioOutputI2S::isr(void)
 		offset = 0;
 	}
 
-	block1L = buffers.readPtr[0];
-	block1R = buffers.readPtr[1];
-  block2L = buffers.readPtr[2];
-	block2R = buffers.readPtr[3];
+  block[0] = buffers.readPtr[0];
+	block[1] = buffers.readPtr[1];
+  if (CHANNELS > 2) {
+    block[2] = buffers.readPtr[2];
+	  block[3] = buffers.readPtr[3];
+  }
 
 	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES/2; i++)
 	{
-		dest[4 * i]     = block1L[i + offset];
-		dest[4 * i + 1] = block1R[i + offset];
-    dest[4 * i + 2] = block2L[i + offset];
-		dest[4 * i + 3] = block2R[i + offset];
-	}
+		dest[CHANNELS * i + 0] = block[0][i + offset];
+		dest[CHANNELS * i + 1] = block[1][i + offset];
+    
+    if (CHANNELS > 2) {
+      dest[CHANNELS * i + 2] = block[2][i + offset];
+		  dest[CHANNELS * i + 3] = block[3][i + offset];
+    }
+  }
 	
 	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
 
