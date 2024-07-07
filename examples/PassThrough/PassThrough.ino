@@ -4,7 +4,7 @@
 #include <arm_math.h>
 #include "control_AK4619VN.h"
 #include <FreqCount.h>
-#include "output_i2s.h"
+#include "output_i2s_tdm.h"
 
 //AudioControlSGTL5000 audioShield;
 AK4619VN codec(&Wire, AK4619VN_ADDR);
