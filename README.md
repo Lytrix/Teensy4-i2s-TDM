@@ -12,6 +12,8 @@ The [AK4619VN Codec library](https://github.com/Lytrix/ak4619vn) is forked from 
 
 My use case for extending this Teensy i2s library with 4 channel in/out AK4619 support is to build a 4 channel in/out eurorack audio looper using the awesome [Apfelaudio eurorack pmod module](https://apfelaudio.com/modules/)
 
+![Image](images/apfelaudio_pmod_with_teensy.jpg)
+
 ## Installation
 
 Download this repo as a zip and add the zip file as a zip library in Arduino IDE via the menu.
