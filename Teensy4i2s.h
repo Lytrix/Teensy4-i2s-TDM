@@ -34,8 +34,8 @@
 
 //#include "control_sgtl5000.h"
 //#include "control_TLV320AIC3204.h"
-#include "input_i2s.h"
-#include "output_i2s.h"
+#include "input_i2s_tdm.h"
+#include "output_i2s_tdm.h"
 
 extern AudioOutputI2S audioOutputI2S;
 extern AudioInputI2S audioInputI2S;

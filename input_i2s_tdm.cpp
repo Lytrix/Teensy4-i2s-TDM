@@ -25,7 +25,7 @@
  */
 
 #include "AudioConfig.h"
-#include "input_i2s.h"
+#include "input_i2s_tdm.h"
 
 DMAMEM __attribute__((aligned(32))) static uint64_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
 BufferQueue AudioInputI2S::buffers;

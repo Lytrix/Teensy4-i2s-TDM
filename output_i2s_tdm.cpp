@@ -31,8 +31,8 @@
 #include <Arduino.h>
 #include <cstdlib>
 #include "AudioConfig.h"
-#include "output_i2s.h"
-#include "input_i2s.h"
+#include "output_i2s_tdm.h"
+#include "input_i2s_tdm.h"
 #include <cmath>
 
 // high-level explanation of how this I2S & DMA code works:

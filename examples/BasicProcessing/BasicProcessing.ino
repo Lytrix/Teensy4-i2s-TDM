@@ -1,10 +1,10 @@
-#include "Teensy4i2s.h"
+#include <Teensy4i2s.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <arm_math.h>
-#include "control_AK4619VN.h"
+#include <control_AK4619VN.h>
 #include <FreqCount.h>
-#include "output_i2s.h"
+#include <output_i2s_tdm.h>
 
 //AudioControlSGTL5000 audioShield;
 AK4619VN codec(&Wire, AK4619VN_ADDR);
@@ -20,7 +20,7 @@ void processAudio(int32_t** inputs, int32_t** outputs)
     
     // You can use regular sinf() as well, but it's highly recommended 
     // to use these optimised arm-specific functions whenever possible
-    int sig = (int)(arm_sin_f32(acc * 0.001f * 2.0f * M_PI) * 100000000.0f);
+    int sig = (int)(arm_sin_f32(acc * 0.001f * 2.0f * M_PI) * 200000000.0f);
 
     outputs[0][i] = -inputs[0][i] + sig;
     outputs[1][i] = -inputs[1][i] + sig;
@@ -30,8 +30,8 @@ void processAudio(int32_t** inputs, int32_t** outputs)
       outputs[3][i] = -inputs[3][i] + sig;
     }  
     acc++;
-    if (acc >= 20000)
-      acc -= 20000;
+    if (acc >= 50000)
+      acc -= 50000;
   }
 }
 
