@@ -1,5 +1,12 @@
 #include "control_AK4619VN.h"
 #include <Wire.h>
+// #include <iostream>
+// #include <ostream>
+// #include <vector>
+// #include <iomanip>
+// #include <ctime>
+// using namespace std;
+#include <Arduino.h>
 
 AK4619VN::AK4619VN(TwoWire *i2c, uint8_t i2cAddress) {
   if(i2c == NULL){
@@ -79,6 +86,7 @@ uint8_t AK4619VN::setRstState(bool state){
   
   error = readReg(PWRMGM, &regval);
   if(error){
+    Serial.println("Unable to set codec reset state");
     return error;
   }
   
@@ -98,6 +106,7 @@ uint8_t AK4619VN::pwrMgm(bool ADC2, bool ADC1, bool DAC2, bool DAC1){
   //Check for RESET state of CODEC
   error = readReg(PWRMGM, &rstState);
   if(error){
+    Serial.println("Unable to set codec PWR");
     return error;
   }
   
@@ -139,11 +148,6 @@ uint8_t AK4619VN::audioFormatSlotLen(slot_start_t SLOT, data_bit_length_t IDL, d
   uint8_t regval = 0;
   uint8_t error = 0;
   
-  error = readReg(AUDFORM2, &regval);
-  if(error){
-    return error;
-  }
-  
   uint8_t tempval = (SLOT << 4 | IDL << 2 | ODL);
   
   regval &= 0xF0;
@@ -151,6 +155,7 @@ uint8_t AK4619VN::audioFormatSlotLen(slot_start_t SLOT, data_bit_length_t IDL, d
   
   error = readReg(AUDFORM2, &regval);
   if(error){
+    Serial.println("Unable to set slot length.");
     return error;
   }
   
@@ -179,6 +184,7 @@ uint8_t AK4619VN::audioFormatMode(audio_iface_format_t FORMAT, bool BICK_RISING,
   
   error = writeReg(AUDFORM1, regval);
   if(error){
+    Serial.println("Unable to set Audio Format Mode");
     return error;
   }
   
@@ -201,6 +207,7 @@ uint8_t AK4619VN::sysClkSet(clk_fs_t FS){
   
   error = readReg(AUDFORM1, &regval);
   if(error){
+    Serial.println("Unable to set system clock mode.");
     return error;
   }
   
@@ -240,6 +247,7 @@ uint8_t AK4619VN::micGain(mic_gain_t MGN1L, mic_gain_t MGN1R, mic_gain_t MGN2L, 
   
   error = writeReg(MICGAIN1, regval0);
   if(error){
+    Serial.println("Unable to set codec mic input gain.");
     return error;
   }
   
@@ -335,6 +343,7 @@ uint8_t AK4619VN::outputGain(bool relative, output_gain_t channel, int16_t gainV
     error = readRegMulti(DAC1LVOL, 4, regvals); //Read output gain regvals
     
     if(error){
+      Serial.println("Unable to set DAC1 gain.");
       return error;
     }
     
@@ -346,11 +355,13 @@ uint8_t AK4619VN::outputGain(bool relative, output_gain_t channel, int16_t gainV
         
         error = writeReg(DAC1LVOL, regvals[0]);
         if(error){
+          Serial.println("Unable to set DAC1 Left gain.");
           return error;
         }
         
         error = writeReg(DAC1RVOL, regvals[1]);
         if(error){
+          Serial.println("Unable to set DAC1 Right gain.");
           return error;
         }
         break;
@@ -361,11 +372,13 @@ uint8_t AK4619VN::outputGain(bool relative, output_gain_t channel, int16_t gainV
         
         error = writeReg(DAC2LVOL, regvals[2]);
         if(error){
+          Serial.println("Unable to set DAC2 Left gain.");
           return error;
         }
         
         error = writeReg(DAC2RVOL, regvals[3]);
         if(error){
+          Serial.println("Unable to set DAC2 Right gain.");
           return error;
         }
         break; 
@@ -465,20 +478,33 @@ uint8_t AK4619VN::outputGain(bool relative, output_gain_t channel, int16_t gainV
 uint8_t AK4619VN::inputConf(intput_conf_t ADC1L, intput_conf_t ADC1R, intput_conf_t ADC2L, intput_conf_t ADC2R){
   
   uint8_t regval = 0;
+  uint8_t error = 0;
   
   regval = ( ADC1L << 6 | ADC1R << 4 | ADC2L << 2 | ADC2R);
   
-  return (writeReg(ADCAIN, regval));
+  error = writeReg(ADCAIN, regval);
+  
+  if(error){
+    Serial.println("Unable to set DAC input configuration.");
+    return error;
+  }
 }
 
 //DAC input configuration
 uint8_t AK4619VN::outputConf(output_conf_t DAC2, output_conf_t DAC1){
   
   uint8_t regval = 0;
+  uint8_t error = 0;
   
   regval = ( DAC2 << 2 | DAC1);
   
-  return (writeReg(DACDIN, regval));
+  error = writeReg(DACDIN, regval);
+
+  if(error){
+    Serial.println("Unable to set DAC output configuration.");
+    return error;
+  }
+
 }
 
 // Modify regVal by inVal, check for under/overflow and adjust regVal to min or max
