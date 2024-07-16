@@ -19,8 +19,6 @@ WavWriter<512> writer;
 //AudioControlSGTL5000 audioShield;
 AK4619VN codec(&Wire, AK4619VN_ADDR);
 
-
-
 // Use these with the Teensy 3.5 & 3.6 & 4.1 SD card
 #define SDCARD_CS_PIN    BUILTIN_SDCARD
 #define SDCARD_MOSI_PIN  11  // not actually used
@@ -122,16 +120,16 @@ void setup(void)
   //error = codec.audioFormatMode(AK4619VN::AK_TDM256_I2S_32B, false, false);
   error = codec.audioFormatMode(AK4619VN::AK_TDM128_I2S_32B, false, false);
   //error = codec.audioFormatMode(AK4619VN::AK_TDM128_MSB_32B, true, false);
-  
+  if(error){
+    Serial.println("Unable to set audio format mode.");
+  }  
     // Set TDM mode and Slot Length for DAC 1&2 and ADC1&2
   error = codec.audioFormatSlotLen(AK4619VN::AK_SLOT, AK4619VN::AK_32BIT, AK4619VN::AK_24BIT);
   if(error){
     Serial.println("Unable to set slot length.");
   }
   
-  if(error){
-    Serial.println("Unable to set audio format mode.");
-  }  
+
   // Set sample rate to 96kHz
   //error = codec.sysClkSet(AK4619VN::AK_256FS_96KS);
   //error = codec.sysClkSet(AK4619VN::AK_256FS_8_48KS);
@@ -181,7 +179,7 @@ void setup(void)
   delay(500);
   //Verify settings
   codec.printRegs(0x0, 21);
-
+  delay(1000);
   // need to wait a bit before configuring codec, otherwise something weird happens and there's no output...
   // delay(1000); 
   // Enable the audio CODEC and set the volume
