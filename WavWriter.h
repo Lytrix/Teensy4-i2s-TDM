@@ -100,9 +100,6 @@ enum class BufferState
 	FLUSH1,
 };
 
-
-
-//size_t 			  LOCAL_CHANNELS; // For testing one channel
 template <size_t transfer_size> 
 class WavWriter
 {
@@ -302,7 +299,7 @@ class WavWriter
 		File              fp_;  // The file where data is recorded
 		bool 			  recording_;
 		BufferState       bstate_;
-		size_t 			  LOCAL_CHANNELS; // For testing one channel
+		size_t 			  LOCAL_CHANNELS = 1; // For testing one channel
 		WAV_FormatTypeDef wavheader_;
 
 
