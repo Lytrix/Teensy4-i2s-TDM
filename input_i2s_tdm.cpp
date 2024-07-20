@@ -27,7 +27,7 @@
 #include "AudioConfig.h"
 #include "input_i2s_tdm.h"
 
-DMAMEM __attribute__((aligned(32))) static uint64_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES * CHANNELS];
 BufferQueue AudioInputI2S::buffers;
 DMAChannel AudioInputI2S::dma(false);
 int32_t* outBuffers[4]; // temporary holder for the values returned by getData
@@ -87,7 +87,7 @@ void AudioInputI2S::isr(void)
 	{
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		src = (int32_t *)&i2s_rx_buffer[(AUDIO_BLOCK_SAMPLES * CHANNELS / 2)];
 		offset = AUDIO_BLOCK_SAMPLES/2;
 		incrementQueue = true;
 	} 

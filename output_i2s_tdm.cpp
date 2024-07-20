@@ -57,7 +57,7 @@ void audioCallbackPassthrough(int32_t** inputs, int32_t** outputs)
 
 void (*i2sAudioCallback)(int32_t** inputs, int32_t** outputs) = audioCallbackPassthrough;
 
-DMAMEM __attribute__((aligned(32))) static uint64_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES * CHANNELS];
 #include "utility/imxrt_hw.h"
 #include "imxrt.h"
 #include "i2s_timers.h"
@@ -116,7 +116,8 @@ void AudioOutputI2S::isr(void)
 	{
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		//dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		dest = i2s_tx_buffer + AUDIO_BLOCK_SAMPLES*2;
     // dest = (int32_t *)((uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2);
 		callUpdate = true;
 		offset = AUDIO_BLOCK_SAMPLES / 2;
@@ -140,12 +141,12 @@ void AudioOutputI2S::isr(void)
 
 	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES/2; i++)
 	{
-		dest[CHANNELS * i + 0] = block[0][i + offset];
-		dest[CHANNELS * i + 1] = block[1][i + offset];
+		dest[i + 0] = block[0][i + offset];
+		dest[i + 1] = block[1][i + offset];
     
     if (CHANNELS > 2) {
-      dest[CHANNELS * i + 2] = block[2][i + offset];
-		  dest[CHANNELS * i + 3] = block[3][i + offset];
+      dest[i + 2] = block[2][i + offset];
+		  dest[i + 3] = block[3][i + offset];
     }
   }
 	

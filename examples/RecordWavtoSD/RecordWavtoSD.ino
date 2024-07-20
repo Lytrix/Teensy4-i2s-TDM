@@ -13,7 +13,7 @@
 #include "output_i2s_tdm.h"
 #include "WavWriter.h"
 
-WavWriter<512> writer;
+WavWriter<32768> writer;
 //WavWriter writer;
 
 //AudioControlSGTL5000 audioShield;
@@ -41,8 +41,16 @@ void processAudio(int32_t** inputs, int32_t** outputs)
 
 void recordAudio(int32_t** inputs, int32_t** outputs)
 {
-  // Read samples:
-  writer.Sample((int32_t *)inputs[0]);
+  // Test input
+  //for(int i=0;i < 4;i++){
+  //   //Serial.println(sizeof(inputs[0]));
+  //   Serial.println(inputs[0][i]);
+  // }
+  //Read samples:
+  for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES; i++)
+  {
+    writer.Sample((int32_t *)inputs[0][i]);
+  }
 }
 
 // Use pin9 to test Clock Frequencies on pin 20/21/23
@@ -200,10 +208,10 @@ void loop(void)
   myTime = millis();
   //debugCPU();
   //debugClockFreq();
-    if (myTime < 11000) { 
+    if (myTime < 5000) { 
         writer.Write();
     }
-    else if (myTime == 11000) {
+    else if (myTime == 5000) {
        writer.SaveFile();
     } else {
       Serial.println("Completed");
