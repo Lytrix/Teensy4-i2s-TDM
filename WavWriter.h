@@ -160,7 +160,7 @@ class WavWriter
 
 	void Sample(const int32_t *in)
 	{
-	    for(size_t i = 0; i < LOCAL_CHANNELS; i++)
+	    for(size_t i = 0; i < 4; i++)
 	    {
 	        switch(BIT_DEPTH)
 	        {
@@ -174,7 +174,7 @@ class WavWriter
 	              break;
 	            case 32: 
 	              //transfer_buff[wptr_ + i] = f2s32(in[i]); 
-	              transfer_buff[wptr_ + i] = in[i]; 
+	              transfer_buff[wptr_ + i] = (int32_t)in; 
 	              // Test Samples coming in:
 	              //Serial.println(in[i]);
 	              break;
@@ -183,7 +183,7 @@ class WavWriter
 	        }
 	    }
 	    num_samps_++;
-	    wptr_ += LOCAL_CHANNELS;
+	    wptr_ += 4;
 	    size_t cap_point
 	        = BIT_DEPTH == 16 ? kTransferSamps * 2 :kTransferSamps;
 	    if(wptr_ == cap_point)
@@ -201,7 +201,7 @@ class WavWriter
 	void Write()
 	{
 
-	    Serial.println("Write buffer to file");
+	   
 	    if(bstate_ != BufferState::IDLE && recording_)
 	    {
 	        uint32_t     offset;
@@ -211,6 +211,8 @@ class WavWriter
 	        bstate_ = BufferState::IDLE;
 	        //f_write(&fp_, &transfer_buff[offset], transfer_size, &bw); //STM32
 	        fp_.write(&transfer_buff[offset],transfer_size); // SD Arduino library
+			// Serial.print("File size: ");
+			//Serial.println(fp_.size());
 	    }
 	}
 

@@ -20,15 +20,15 @@ public:
 		writePtr[0] = &channel[0][writePos * AUDIO_BLOCK_SAMPLES];
 		writePtr[1] = &channel[1][writePos * AUDIO_BLOCK_SAMPLES];
     
-    readPtr[0] = &channel[0][readPos * AUDIO_BLOCK_SAMPLES];
+        readPtr[0] = &channel[0][readPos * AUDIO_BLOCK_SAMPLES];
 		readPtr[1] = &channel[1][readPos * AUDIO_BLOCK_SAMPLES];
     
     if (CHANNELS > 2) {
-      writePtr[2] = &channel[2][writePos * AUDIO_BLOCK_SAMPLES];
-		  writePtr[3] = &channel[3][writePos * AUDIO_BLOCK_SAMPLES];
+        writePtr[2] = &channel[2][writePos * AUDIO_BLOCK_SAMPLES];
+		writePtr[3] = &channel[3][writePos * AUDIO_BLOCK_SAMPLES];
 
-      readPtr[2] = &channel[2][readPos * AUDIO_BLOCK_SAMPLES];
-		  readPtr[3] = &channel[3][readPos * AUDIO_BLOCK_SAMPLES];
+        readPtr[2] = &channel[2][readPos * AUDIO_BLOCK_SAMPLES];
+		readPtr[3] = &channel[3][readPos * AUDIO_BLOCK_SAMPLES];
      }
         for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES * BUFFER_QUEUE_SIZE; i++)
         {
@@ -55,8 +55,8 @@ public:
 		writePtr[0] = &channel[0][writePos * AUDIO_BLOCK_SAMPLES];
 		writePtr[1] = &channel[1][writePos * AUDIO_BLOCK_SAMPLES];
     
-    if (CHANNELS > 2) {
-      writePtr[2] = &channel[2][writePos * AUDIO_BLOCK_SAMPLES];
+        if (CHANNELS > 2) {
+          writePtr[2] = &channel[2][writePos * AUDIO_BLOCK_SAMPLES];
 		  writePtr[3] = &channel[3][writePos * AUDIO_BLOCK_SAMPLES];
     }
     available++;
@@ -78,8 +78,8 @@ public:
 		readPtr[1] = &channel[1][readPos * AUDIO_BLOCK_SAMPLES];
     
     if (CHANNELS > 2) {
-      readPtr[2] = &channel[2][readPos * AUDIO_BLOCK_SAMPLES];
-		  readPtr[3] = &channel[3][readPos * AUDIO_BLOCK_SAMPLES];
+      	readPtr[2] = &channel[2][readPos * AUDIO_BLOCK_SAMPLES];
+		readPtr[3] = &channel[3][readPos * AUDIO_BLOCK_SAMPLES];
     }
     available--;
 	}
