@@ -160,7 +160,7 @@ class WavWriter
 
 	void Sample(const int32_t *in)
 	{
-	    for(size_t i = 0; i < 4; i++)
+	    for(size_t i = 0; i < 1; i++)
 	    {
 	        switch(BIT_DEPTH)
 	        {
@@ -183,7 +183,7 @@ class WavWriter
 	        }
 	    }
 	    num_samps_++;
-	    wptr_ += 4;
+	    wptr_ += 1;
 	    size_t cap_point
 	        = BIT_DEPTH == 16 ? kTransferSamps * 2 :kTransferSamps;
 	    if(wptr_ == cap_point)
