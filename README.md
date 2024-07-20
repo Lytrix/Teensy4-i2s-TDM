@@ -17,6 +17,12 @@ My use case for extending this Teensy i2s library with 4 channel in/out AK4619 s
 
 Download this repo as a zip and add the zip file as a zip library in Arduino IDE via the menu.
 
+## Examples
+
+- Passthrough       : 4 in goes to 4 out via buffer
+- Basic processing  : Adds sine wave to input)
+- Recorder          : Record a 32-bit wav file to SD card
+
 ## Features
 
 * 2 channel i2s
