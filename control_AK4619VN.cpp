@@ -1,5 +1,99 @@
-#include "control_AK4619VN.h"
+#include <Arduino.h>
 #include <Wire.h>
+#include "control_AK4619VN.h"
+
+void AK4619VN::init() {
+  // Enable the Audio codec
+  pinMode(22, OUTPUT); //PWN on
+  digitalWrite(22, HIGH);
+  delay(1000);
+  
+  AK4619VN::begin(18, 19); // SDA, SCL for Teensy 4.1
+  /*    pin  6 : SDIN
+        pin  7 : SDOUT
+        pin 23 : MCLK
+        pin 21 : BICK
+        pin 20 : SYNC */
+  
+  //Set CODEC to reset state for initialization
+  uint8_t error = 0;
+  error = AK4619VN::setRstState(true); 
+  if(error){
+    Serial.println("Unable to set codec reset state");
+  }
+  //Enable PWR of DAC1&2 and ADC1&2
+  error = AK4619VN::pwrMgm(true, true, true, true); 
+  if(error){
+    Serial.println("Unable to set codec PWR");
+  }
+
+  // Set Slot start (LR (false) or Slot length), BICK Edge falling/rising, SDOut speed slow/fast
+  //error = AK4619VN::audioFormatMode(AK4619VN::AK_I2S_STEREO, false, false);
+  //error = AK4619VN::audioFormatMode(AK4619VN::AK_MSB_STEREO, false, false);
+  //error = AK4619VN::audioFormatMode(AK4619VN::AK_TDM256_I2S_32B, false, false);
+  error = AK4619VN::audioFormatMode(AK4619VN::AK_TDM128_I2S_32B, false, false);
+  //error = AK4619VN::audioFormatMode(AK4619VN::AK_TDM128_MSB_32B, true, false);
+  if(error){
+    Serial.println("Unable to set audio format mode.");
+  }  
+    // Set TDM mode and Slot Length for DAC 1&2 and ADC1&2
+  error = AK4619VN::audioFormatSlotLen(AK4619VN::AK_SLOT, AK4619VN::AK_32BIT, AK4619VN::AK_24BIT);
+  if(error){
+    Serial.println("Unable to set slot length.");
+  }
+  
+
+  // Set sample rate to 96kHz
+  //error = AK4619VN::sysClkSet(AK4619VN::AK_256FS_96KS);
+  //error = AK4619VN::sysClkSet(AK4619VN::AK_256FS_8_48KS);
+  error = AK4619VN::sysClkSet(AK4619VN::AK_128FS_192KS);
+  if(error){
+    Serial.println("Unable to set system clock mode.");
+  }
+  // Set all 4 ADC gains to 0dB
+  error = AK4619VN::micGain(AK4619VN::AK_MIC_GAIN_0DB, AK4619VN::AK_MIC_GAIN_0DB, AK4619VN::AK_MIC_GAIN_0DB, AK4619VN::AK_MIC_GAIN_0DB); 
+  if(error){
+    Serial.println("Unable to set codec mic input gain.");
+  }
+  // // Set all 4 ADC digital volume to 0dB
+  // error = AK4619VN::inputGain(AK4619VN::AK_IN_GAIN_0DB, AK4619VN::AK_IN_GAIN_0DB, AK4619VN::AK_IN_GAIN_0DB, AK4619VN::AK_IN_GAIN_0DB); 
+  // if(error){
+  //   Serial.println("Unable to set codec digital input input gain.");
+  // }
+  //Set all DAC1 LR gains to 0dB
+  error = AK4619VN::outputGain(false, AK4619VN::AK_DAC1B, AK4619VN::AK_OUT_GAIN_0DB); 
+  if(error){
+    Serial.println("Unable to set DAC1 gain.");
+  }
+  //Set all DAC2 LR gains to 0dB
+  error = AK4619VN::outputGain(false, AK4619VN::AK_DAC2B, AK4619VN::AK_OUT_GAIN_0DB);
+  if(error){ 
+    Serial.println("Unable to set DAC2 gain.");
+  }
+  //Set Input config to Single ended 1 on both ADCs
+  error = AK4619VN::inputConf(AK4619VN::AK_IN_SE1, AK4619VN::AK_IN_SE1, AK4619VN::AK_IN_SE1, AK4619VN::AK_IN_SE1);
+  if(error){
+    Serial.println("Unable to set DAC input configuration.");
+  }
+  //DAC2 to SDOUT2, DAC1 to SDOUT1
+  error = AK4619VN::outputConf(AK4619VN::AK_OUT_SDIN2, AK4619VN::AK_OUT_SDIN1); 
+  //error = AK4619VN::outputConf(AK4619VN::AK_OUT_SDOUT1, AK4619VN::AK_OUT_SDOUT1); 
+  if(error){
+    Serial.println("Unable to set DAC input configuration.");
+  }
+  
+  //Release Reset state
+  error = AK4619VN::setRstState(false); 
+  if(error){
+    Serial.println("Unable to clear codec reset state.");
+  }
+  delay(500);
+  Serial.println("Audio Codec Setup completed:");
+  delay(500);
+  //Verify settings
+  AK4619VN::printRegs(0x0, 21);
+  delay(1000);
+}
 
 AK4619VN::AK4619VN(TwoWire *i2c, uint8_t i2cAddress) {
   if(i2c == NULL){
@@ -584,7 +678,7 @@ uint8_t AK4619VN::readRegMulti(uint8_t startReg, uint8_t len, uint8_t * vals) {
   Name: readReg
 
   Description:
-    Read a register from the codec.
+    Read a register from the AK4619VN::
 
   Input Parameters:
     reg - Register address.
@@ -624,7 +718,7 @@ uint8_t AK4619VN::readRegMulti(uint8_t startReg, uint8_t len, uint8_t * vals) {
   Name: writeReg
 
   Description:
-    Write a register to the ES8388 codec.
+    Write a register to the ES8388 AK4619VN::
 
   Input Parameters:
     reg - Register address.

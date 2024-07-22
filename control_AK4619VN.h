@@ -68,6 +68,7 @@ public:
     AK4619VN(TwoWire *i2c, uint8_t i2cAddress = AK4619VN_ADDR); // Constructor
     void begin(uint8_t SDA, uint8_t SCL);
     void begin(void);
+    void init(void);
     
     uint8_t setRstState(bool state);
     uint8_t pwrMgm(bool ADC2, bool ADC1, bool DAC2, bool DAC1);
