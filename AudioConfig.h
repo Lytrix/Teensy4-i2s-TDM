@@ -13,3 +13,6 @@
 #define SAMPLE_24_MIN -8388608 // 24 bit signed min
 #define SAMPLE_32_MAX INT32_MAX
 #define SAMPLE_32_MIN INT32_MIN
+
+#define AudioNoInterrupts() (NVIC_DISABLE_IRQ(IRQ_SOFTWARE))
+#define AudioInterrupts()   (NVIC_ENABLE_IRQ(IRQ_SOFTWARE))
