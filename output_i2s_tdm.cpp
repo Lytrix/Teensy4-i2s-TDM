@@ -105,7 +105,7 @@ void AudioOutputI2S::begin()
 // process() call again, computing a new block of data
 void AudioOutputI2S::isr(void)
 {
-	int32_t* dest;
+	uint32_t* dest;
   int32_t* block[CHANNELS];	
 	uint32_t saddr, offset;
 	bool callUpdate;
@@ -117,7 +117,7 @@ void AudioOutputI2S::isr(void)
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
 		//dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		dest = i2s_tx_buffer + AUDIO_BLOCK_SAMPLES*CHANNELS/2;
+		dest = i2s_tx_buffer + AUDIO_BLOCK_SAMPLES * CHANNELS/2;
     // dest = (int32_t *)((uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2);
 		callUpdate = true;
 		offset = AUDIO_BLOCK_SAMPLES / 2;
@@ -126,7 +126,7 @@ void AudioOutputI2S::isr(void)
 	{
 		// DMA is transmitting the second half of the buffer
 		// so we must fill the first half
-		dest = (int32_t *)i2s_tx_buffer;
+		dest = i2s_tx_buffer;
 		callUpdate = false;
 		offset = 0;
 	}
