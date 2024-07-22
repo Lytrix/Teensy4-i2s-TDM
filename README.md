@@ -7,6 +7,8 @@ It was derived from the I2S code in Paul Stoffregen's [Teensy Audio Library](htt
 
 The [AK4619VN Codec library](https://github.com/Lytrix/ak4619vn) is forked from the code created by Trimmenz for ESP32 boards and modified to work with a Teensy.
 
+The WavWrite.h code is forked from the Electro-Smith libDaisy example code [WavWrite.h](https://github.com/electro-smith/libDaisy/blob/f7727edb9a1febdd174b5310a7bc65340dae8700/src/util/WavWriter.h).
+
 ## Goal
 
 My use case for extending this Teensy i2s library with 4 channel in/out AK4619 support is to build a 4 channel in/out eurorack audio looper using the awesome [Apfelaudio eurorack pmod module](https://apfelaudio.com/modules/)
