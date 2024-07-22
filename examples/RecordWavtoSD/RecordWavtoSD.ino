@@ -1,23 +1,22 @@
-#include "Teensy4i2s.h"
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
 #include <arm_math.h>
-#include "control_AK4619VN.h"
 #include <FreqCount.h>
-#include "output_i2s_tdm.h"
 #include "DMAChannel.h"
 #include "AudioConfig.h"
-#include "i2s_timers.h"
 #include "input_i2s_tdm.h"
 #include "output_i2s_tdm.h"
+#include "control_AK4619VN.h"
+#include "i2s_timers.h"
 #include "WavWriter.h"
 
 WavWriter<32768> writer;
-//WavWriter writer;
 
-//AudioControlSGTL5000 audioShield;
+// Setup classes for Audio codec and I2S
 AK4619VN codec(&Wire, AK4619VN_ADDR);
+AudioOutputI2S audioOutputI2S;
+AudioInputI2S audioInputI2S;
 
 // Use these with the Teensy 3.5 & 3.6 & 4.1 SD card
 #define SDCARD_CS_PIN    BUILTIN_SDCARD
@@ -82,6 +81,7 @@ void setup(void)
 {
   Serial.begin(9600);
   Serial.println("Started setup");
+
   // Initialize the SD card
   SPI.setMOSI(SDCARD_MOSI_PIN);
   SPI.setSCK(SDCARD_SCK_PIN);
@@ -93,13 +93,14 @@ void setup(void)
     }
   } 
 
+  // Start the I2S interrupts
+  audioOutputI2S.begin();
+  audioInputI2S.begin();
+
   // Start the Codec
   codec.init();
   // Assign the callback function
   i2sAudioCallback = processAudio;
-  
-  // Start the I2S interrupts
-  InitI2s();
  
   // need to wait a bit before configuring codec, otherwise something weird happens and there's no output...
   // delay(1000); 
