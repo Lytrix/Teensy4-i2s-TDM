@@ -167,8 +167,8 @@ void continueRecording() {
     // writes are used.
     memcpy(buffer, queue1.readBuffer(), 512);
     queue1.freeBuffer();
-    // memcpy(buffer+512, queue1.readBuffer(), 512);
-    // queue1.freeBuffer();
+    //memcpy(buffer+256, queue1.readBuffer(), 256);
+    //queue1.freeBuffer();
     // write all 512 bytes to the SD card
     //elapsedMicros usec = 0;
     frec.write(buffer, 512);

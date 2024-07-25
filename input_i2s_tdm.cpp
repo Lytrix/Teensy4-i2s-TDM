@@ -113,7 +113,8 @@ void AudioInputI2S::isr(void)
 	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*2];
+		src = (int32_t *)((uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2);
+		//src = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*2];
 		if (update_responsibility) update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
