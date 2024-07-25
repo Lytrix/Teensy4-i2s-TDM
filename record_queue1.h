@@ -24,30 +24,40 @@
  * THE SOFTWARE.
  */
 
-#pragma once
+#ifndef record_queue1_h_
+#define record_queue1_h_
 
-#include <Arduino.h>
-#include <DMAChannel.h>
-#include "buffer_queue.h"
-#include "AudioStream32.h"
+#include <Arduino.h>     // github.com/PaulStoffregen/cores/blob/master/teensy4/Arduino.h
+#include <AudioStream32.h> // github.com/PaulStoffregen/cores/blob/master/teensy4/AudioStream.h
 
-class AudioInputI2S : public AudioStream
+class AudioRecordQueue : public AudioStream
 {
-public:
-	AudioInputI2S(void) : AudioStream(0, NULL) { begin(); }
-	virtual void update(void);
-	void begin();
-	static int32_t** getData();
-protected:	
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr(void);
-
 private:
-		static audio_block_t *block_ch1;
-	static audio_block_t *block_ch2;
-	static audio_block_t *block_ch3;
-	static audio_block_t *block_ch4;
-	static BufferQueue buffers;	
-	static uint16_t block_offset;
+#if defined(__IMXRT1062__) || defined(__MK66FX1M0__) || defined(__MK64FX512__)
+	static const int max_buffers = 209;
+#else
+	static const int max_buffers = 53;
+#endif
+public:
+	AudioRecordQueue(void) : AudioStream(1, inputQueueArray),
+		userblock(NULL), head(0), tail(0), enabled(0) { }
+	void begin(void) {
+		clear();
+		enabled = 1;
+	}
+	int available(void);
+	void clear(void);
+	int32_t * readBuffer(void);
+	void freeBuffer(void);
+	void end(void) {
+		enabled = 0;
+	}
+	virtual void update(void);
+private:
+	audio_block_t *inputQueueArray[1];
+	audio_block_t * volatile queue[max_buffers];
+	audio_block_t *userblock;
+	volatile uint8_t head, tail, enabled;
 };
+
+#endif

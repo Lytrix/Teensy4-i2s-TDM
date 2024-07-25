@@ -24,30 +24,39 @@
  * THE SOFTWARE.
  */
 
-#pragma once
+#ifndef audio_spi_interrupt1_h_
+#define audio_spi_interrupt1_h_
 
-#include <Arduino.h>
-#include <DMAChannel.h>
-#include "buffer_queue.h"
-#include "AudioStream32.h"
+#include <Arduino.h>     // github.com/PaulStoffregen/cores/blob/master/teensy4/Arduino.h
+#include <AudioStream32.h> // github.com/PaulStoffregen/cores/blob/master/teensy4/AudioStream.h
+#include <SPI.h>         // github.com/PaulStoffregen/SPI/blob/master/SPI.h
 
-class AudioInputI2S : public AudioStream
-{
-public:
-	AudioInputI2S(void) : AudioStream(0, NULL) { begin(); }
-	virtual void update(void);
-	void begin();
-	static int32_t** getData();
-protected:	
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr(void);
+static inline void AudioStartUsingSPI(void) __attribute__((always_inline, unused));
+static inline void AudioStopUsingSPI(void) __attribute__((always_inline, unused));
 
-private:
-		static audio_block_t *block_ch1;
-	static audio_block_t *block_ch2;
-	static audio_block_t *block_ch3;
-	static audio_block_t *block_ch4;
-	static BufferQueue buffers;	
-	static uint16_t block_offset;
-};
+#ifdef SPI_HAS_NOTUSINGINTERRUPT
+
+extern unsigned short AudioUsingSPICount;
+
+static inline void AudioStartUsingSPI(void) {
+	SPI.usingInterrupt(IRQ_SOFTWARE);
+	AudioUsingSPICount++;
+}
+
+static inline void AudioStopUsingSPI(void) {
+	if (AudioUsingSPICount == 0 || --AudioUsingSPICount == 0)
+		SPI.notUsingInterrupt(IRQ_SOFTWARE);
+}
+
+#else
+
+static inline void AudioStartUsingSPI(void) {
+	SPI.usingInterrupt(IRQ_SOFTWARE);
+}
+
+static inline void AudioStopUsingSPI(void) {
+}
+
+#endif
+
+#endif

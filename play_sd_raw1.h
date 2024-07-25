@@ -24,30 +24,29 @@
  * THE SOFTWARE.
  */
 
-#pragma once
+#ifndef play_sd_raw1_h_
+#define play_sd_raw1_h_
 
-#include <Arduino.h>
-#include <DMAChannel.h>
-#include "buffer_queue.h"
-#include "AudioStream32.h"
+#include <Arduino.h>     // github.com/PaulStoffregen/cores/blob/master/teensy4/Arduino.h
+#include <AudioStream32.h> // github.com/PaulStoffregen/cores/blob/master/teensy4/AudioStream.h
+#include <SD.h>          // github.com/PaulStoffregen/SD/blob/Juse_Use_SdFat/src/SD.h
 
-class AudioInputI2S : public AudioStream
+class AudioPlaySdRaw : public AudioStream
 {
 public:
-	AudioInputI2S(void) : AudioStream(0, NULL) { begin(); }
+	AudioPlaySdRaw(void) : AudioStream(0, NULL) { begin(); }
+	void begin(void);
+	bool play(const char *filename);
+	void stop(void);
+	bool isPlaying(void) { return playing; }
+	uint32_t positionMillis(void);
+	uint32_t lengthMillis(void);
 	virtual void update(void);
-	void begin();
-	static int32_t** getData();
-protected:	
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr(void);
-
 private:
-		static audio_block_t *block_ch1;
-	static audio_block_t *block_ch2;
-	static audio_block_t *block_ch3;
-	static audio_block_t *block_ch4;
-	static BufferQueue buffers;	
-	static uint16_t block_offset;
+	File rawfile;
+	uint32_t file_size;
+	volatile uint32_t file_offset;
+	volatile bool playing;
 };
+
+#endif

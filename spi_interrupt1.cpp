@@ -24,30 +24,12 @@
  * THE SOFTWARE.
  */
 
-#pragma once
-
 #include <Arduino.h>
-#include <DMAChannel.h>
-#include "buffer_queue.h"
-#include "AudioStream32.h"
+#include "spi_interrupt1.h"
 
-class AudioInputI2S : public AudioStream
-{
-public:
-	AudioInputI2S(void) : AudioStream(0, NULL) { begin(); }
-	virtual void update(void);
-	void begin();
-	static int32_t** getData();
-protected:	
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr(void);
+#ifdef SPI_HAS_NOTUSINGINTERRUPT
 
-private:
-		static audio_block_t *block_ch1;
-	static audio_block_t *block_ch2;
-	static audio_block_t *block_ch3;
-	static audio_block_t *block_ch4;
-	static BufferQueue buffers;	
-	static uint16_t block_offset;
-};
+unsigned short AudioUsingSPICount = 0;
+
+#endif
+

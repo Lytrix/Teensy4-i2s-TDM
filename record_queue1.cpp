@@ -24,30 +24,76 @@
  * THE SOFTWARE.
  */
 
-#pragma once
-
 #include <Arduino.h>
-#include <DMAChannel.h>
-#include "buffer_queue.h"
-#include "AudioStream32.h"
+#include "record_queue1.h"
+#include "utility/dspinst.h"
 
-class AudioInputI2S : public AudioStream
+
+int AudioRecordQueue::available(void)
 {
-public:
-	AudioInputI2S(void) : AudioStream(0, NULL) { begin(); }
-	virtual void update(void);
-	void begin();
-	static int32_t** getData();
-protected:	
-	static bool update_responsibility;
-	static DMAChannel dma;
-	static void isr(void);
+	uint32_t h, t;
 
-private:
-		static audio_block_t *block_ch1;
-	static audio_block_t *block_ch2;
-	static audio_block_t *block_ch3;
-	static audio_block_t *block_ch4;
-	static BufferQueue buffers;	
-	static uint16_t block_offset;
-};
+	h = head;
+	t = tail;
+	if (h >= t) return h - t;
+	return max_buffers + h - t;
+}
+
+void AudioRecordQueue::clear(void)
+{
+	uint32_t t;
+
+	if (userblock) {
+		release(userblock);
+		userblock = NULL;
+	}
+	t = tail;
+	while (t != head) {
+		if (++t >= max_buffers) t = 0;
+		release(queue[t]);
+	}
+	tail = t;
+}
+
+int32_t * AudioRecordQueue::readBuffer(void)
+{
+	uint32_t t;
+
+	if (userblock) return NULL;
+	t = tail;
+	if (t == head) return NULL;
+	if (++t >= max_buffers) t = 0;
+	userblock = queue[t];
+	tail = t;
+	return userblock->data;
+}
+
+void AudioRecordQueue::freeBuffer(void)
+{
+	if (userblock == NULL) return;
+	release(userblock);
+	userblock = NULL;
+}
+
+void AudioRecordQueue::update(void)
+{
+	audio_block_t *block;
+	uint32_t h;
+
+	block = receiveReadOnly();
+	if (!block) return;
+	if (!enabled) {
+		release(block);
+		return;
+	}
+	h = head + 1;
+	if (h >= max_buffers) h = 0;
+	if (h == tail) {
+		release(block);
+	} else {
+		queue[h] = block;
+		head = h;
+	}
+}
+
+
