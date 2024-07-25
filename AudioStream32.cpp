@@ -30,7 +30,7 @@
 
 
 #include <Arduino.h>
-#include "AudioStream.h"
+#include "AudioStream32.h"
 
 #if defined(__IMXRT1062__)
   #define MAX_AUDIO_MEMORY 229376
@@ -40,7 +40,7 @@
 
 audio_block_t * AudioStream::memory_pool;
 uint32_t AudioStream::memory_pool_available_mask[NUM_MASKS];
-uint16_t AudioStream::memory_pool_first_mask;
+uint32_t AudioStream::memory_pool_first_mask;
 
 uint16_t AudioStream::cpu_cycles_total = 0;
 uint16_t AudioStream::cpu_cycles_total_max = 0;

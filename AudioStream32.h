@@ -55,7 +55,7 @@
 #endif
 
 #ifndef AUDIO_SAMPLE_RATE_EXACT
-#define AUDIO_SAMPLE_RATE_EXACT 44100.0f
+#define AUDIO_SAMPLE_RATE_EXACT 192000.0f
 #endif
 #define CHANNELS 4
 #define BIT_DEPTH 32
@@ -184,7 +184,7 @@ private:
 	AudioStream *next_update; // for update_all
 	static audio_block_t *memory_pool;
 	static uint32_t memory_pool_available_mask[];
-	static uint16_t memory_pool_first_mask;
+	static uint32_t memory_pool_first_mask;
 };
 
 #if defined(AUDIO_DEBUG_CLASS)
