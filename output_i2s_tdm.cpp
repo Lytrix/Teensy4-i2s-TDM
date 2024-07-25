@@ -30,7 +30,8 @@
 
 #include <Arduino.h>
 #include <cstdlib>
-#include "AudioConfig.h"
+//#include "AudioConfig.h"
+#include "AudioStream32.h"
 #include "output_i2s_tdm.h"
 #include "input_i2s_tdm.h"
 #include <cmath>
@@ -188,7 +189,7 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	}
 
 	//PLL:
-	int fs = SAMPLERATE;
+	int fs = AUDIO_SAMPLE_RATE;
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
 	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
 	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);

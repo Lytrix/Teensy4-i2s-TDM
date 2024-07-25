@@ -24,16 +24,42 @@
  * THE SOFTWARE.
  */
 
-#include "AudioConfig.h"
+#include <Arduino.h>
 #include "input_i2s_tdm.h"
+#include "AudioStream32.h"
+#include "output_i2s_tdm.h"
 
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES * CHANNELS];
-BufferQueue AudioInputI2S::buffers;
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*4];
+audio_block_t * AudioInputI2S::block_ch1 = NULL;
+audio_block_t * AudioInputI2S::block_ch2 = NULL;
+audio_block_t * AudioInputI2S::block_ch3 = NULL;
+audio_block_t * AudioInputI2S::block_ch4 = NULL;
+uint16_t AudioInputI2S::block_offset = 0;
+bool AudioInputI2S::update_responsibility = false;
 DMAChannel AudioInputI2S::dma(false);
-int32_t* outBuffers[4]; // temporary holder for the values returned by getData
+int32_t* outBuffers[4];
+BufferQueue AudioInputI2S::buffers;
 
-void AudioInputI2S::begin()
+#if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
+
+void AudioInputI2S::begin(void)
 {
+	dma.begin(true); // Allocate the DMA channel first
+
+#if defined(KINETISK)
+	// TODO: should we set & clear the I2S_RCSR_SR bit here?
+	AudioOutputI2SQuad::config_i2s();
+
+	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0
+#if defined(__MK20DX256__)
+	CORE_PIN30_CONFIG = PORT_PCR_MUX(4); // pin 30, PTC11, I2S0_RXD1
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	CORE_PIN38_CONFIG = PORT_PCR_MUX(4); // pin 38, PTC11, I2S0_RXD1
+#endif
+
+#elif defined(__IMXRT1062__)
+	//const int pinoffset = 0; // TODO: make this configurable...
+	AudioOutputI2S::config_i2s();
 	dma.begin(true); // Allocate the DMA channel first
 
 	CORE_PIN8_CONFIG  = 3;  //1:RX_DATA0
@@ -55,8 +81,10 @@ void AudioInputI2S::begin()
 	// Enabled transmitting and receiving
 	I2S1_RCSR = I2S_RCSR_RE | I2S_RCSR_BCE | I2S_RCSR_FRDE | I2S_RCSR_FR;
 
+	update_responsibility = update_setup();
 	dma.enable();
 	dma.attachInterrupt(isr);
+#endif
 }
 
 int32_t** AudioInputI2S::getData()
@@ -71,65 +99,135 @@ int32_t** AudioInputI2S::getData()
 	return outBuffers;
 }
 
+
 void AudioInputI2S::isr(void)
 {
 	uint32_t daddr, offset;
 	const int32_t *src;
-	int32_t* dest[CHANNELS];
-  int32_t* temp[CHANNELS];
-  
-	bool incrementQueue;
+	int32_t *dest1, *dest2, *dest3, *dest4;
 
+	//digitalWriteFast(3, HIGH);
 	daddr = (uint32_t)(dma.TCD->DADDR);
 	dma.clearInterrupt();
 
-	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) 
-	{
+	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int32_t *)&i2s_rx_buffer[(AUDIO_BLOCK_SAMPLES * CHANNELS / 2)];
-		offset = AUDIO_BLOCK_SAMPLES/2;
-		incrementQueue = true;
-	} 
-	else 
-	{
+		src = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*2];
+		if (update_responsibility) update_all();
+	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
 		src = (int32_t *)&i2s_rx_buffer[0];
-		offset = 0;
-		incrementQueue = false;
 	}
-	
-  temp[0] = buffers.writePtr[0];
-  temp[1] = buffers.writePtr[1];
-  
-  dest[0] = &(temp[0][offset]);
-  dest[1] = &(temp[1][offset]);
-
-  if (CHANNELS > 2) {
-    temp[2] = buffers.writePtr[2];
-    temp[3] = buffers.writePtr[3];
-
-    dest[2] = &(temp[2][offset]);
-    dest[3] = &(temp[3][offset]);
-  }
-
-
-	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES/2; i++)
-	{
-	  dest[0][i]  = src[CHANNELS * i + 0];
-    dest[1][i]  = src[CHANNELS * i + 1];
-    
-    if (CHANNELS >2) {
-      dest[2][i]  = src[CHANNELS * i + 2];
-      dest[3][i]  = src[CHANNELS * i + 3];
-    }
-  }
-
-	if (incrementQueue)
-	{
-		buffers.publish();
+	if (block_ch1) {
+		offset = block_offset;
+		if (offset <= AUDIO_BLOCK_SAMPLES/2) {
+			arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer) / 2);
+			block_offset = offset + AUDIO_BLOCK_SAMPLES/2;
+			dest1 = &(block_ch1->data[offset]);
+			dest2 = &(block_ch2->data[offset]);
+			dest3 = &(block_ch3->data[offset]);
+			dest4 = &(block_ch4->data[offset]);
+			//Serial.println((int32_t)dest1[0]);
+			for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
+				*dest1++ = *src++;
+				*dest2++ = *src++;
+				*dest3++ = *src++;
+				*dest4++ = *src++;
+			}
+		}
 	}
-	
-	arm_dcache_delete((void*)src, sizeof(i2s_rx_buffer) / 2);
+	//digitalWriteFast(3, LOW);
 }
+
+
+void AudioInputI2S::update(void)
+{
+	audio_block_t *new1, *new2, *new3, *new4;
+	audio_block_t *out1, *out2, *out3, *out4;
+
+	// allocate 4 new blocks
+	new1 = allocate();
+	new2 = allocate();
+	new3 = allocate();
+	new4 = allocate();
+	// but if any fails, allocate none
+	if (!new1 || !new2 || !new3 || !new4) {
+		if (new1) {
+			release(new1);
+			new1 = NULL;
+		}
+		if (new2) {
+			release(new2);
+			new2 = NULL;
+		}
+		if (new3) {
+			release(new3);
+			new3 = NULL;
+		}
+		if (new4) {
+			release(new4);
+			new4 = NULL;
+		}
+	}
+	__disable_irq();
+	if (block_offset >= AUDIO_BLOCK_SAMPLES) {
+		// the DMA filled 4 blocks, so grab them and get the
+		// 4 new blocks to the DMA, as quickly as possible
+		out1 = block_ch1;
+		block_ch1 = new1;
+		out2 = block_ch2;
+		block_ch2 = new2;
+		out3 = block_ch3;
+		block_ch3 = new3;
+		out4 = block_ch4;
+		block_ch4 = new4;
+		block_offset = 0;
+		__enable_irq();
+		// then transmit the DMA's former blocks
+		transmit(out1, 0);
+		release(out1);
+		transmit(out2, 1);
+		release(out2);
+		transmit(out3, 2);
+		release(out3);
+		transmit(out4, 3);
+		release(out4);
+	} else if (new1 != NULL) {
+		// the DMA didn't fill blocks, but we allocated blocks
+		if (block_ch1 == NULL) {
+			// the DMA doesn't have any blocks to fill, so
+			// give it the ones we just allocated
+			block_ch1 = new1;
+			block_ch2 = new2;
+			block_ch3 = new3;
+			block_ch4 = new4;
+			block_offset = 0;
+			__enable_irq();
+		} else {
+			// the DMA already has blocks, doesn't need these
+			__enable_irq();
+			release(new1);
+			release(new2);
+			release(new3);
+			release(new4);
+		}
+	} else {
+		// The DMA didn't fill blocks, and we could not allocate
+		// memory... the system is likely starving for memory!
+		// Sadly, there's nothing we can do.
+		__enable_irq();
+	}
+}
+
+#else // not __MK20DX256__
+
+void AudioInputI2S::begin(void)
+{
+}
+
+
+
+#endif
+

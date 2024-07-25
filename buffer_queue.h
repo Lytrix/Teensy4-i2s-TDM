@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AudioStream32.h"
+
 // Circular queue of buffers used to produce and consume new blocks of audio data 
 // coming from and going to the I2S bus. 
 // Current setup is working for 2 channels using i2s or TDM for 4 channels.
