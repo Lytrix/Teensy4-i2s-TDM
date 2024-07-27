@@ -29,7 +29,7 @@ AudioPlaySdRaw           playRaw1;       //xy=302,157
 AudioOutputI2S           i2s1;           //xy=470,120
 //AudioConnection          patchCord1(i2s2, 0, queue1, 0);
 AudioConnection          patchCord1(i2s2, 0, i2s1, 0);
-//AudioConnection          patchCord2(i2s2, 1, i2s1, 1);
+AudioConnection          patchCord2(i2s2, 1, i2s1, 1);
 AudioConnection          patchCord3(i2s2, 2, i2s1, 2);
 AudioConnection          patchCord4(i2s2, 3, i2s1, 3);
 //AudioConnection          patchCord2(i2s2, 0, peak1, 0);
