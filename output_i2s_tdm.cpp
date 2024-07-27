@@ -118,28 +118,28 @@ void AudioOutputI2S::isr(void)
 	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
+		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*2];
 		if (update_responsibility) update_all();
 	} else {
 		dest = (int32_t *)i2s_tx_buffer;
 	}
-
+	
 	src1 = (block_ch1_1st) ? block_ch1_1st->data + ch1_offset : zeros;
-	src2 = (block_ch2_1st) ? block_ch2_1st->data + ch2_offset : zeros;
-	src3 = (block_ch3_1st) ? block_ch3_1st->data + ch3_offset : zeros;
-	src4 = (block_ch4_1st) ? block_ch4_1st->data + ch4_offset : zeros;
-
+	src2 = (block_ch2_1st) ? block_ch2_1st->data + ch1_offset : zeros;
+	src3 = (block_ch3_1st) ? block_ch3_1st->data + ch1_offset : zeros;
+	src4 = (block_ch4_1st) ? block_ch4_1st->data + ch1_offset : zeros;
+	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
 	//Serial.println((int32_t)src1[0]);
 	
 	// about this code: https://forum.pjrc.com/threads/64508
 	for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
 		*dest++ = *src1++;
-		*dest++ = *src3++;
 		*dest++ = *src2++;
+		*dest++ = *src3++;
 		*dest++ = *src4++;
 	}
 
-	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
+	
 
 	if (block_ch1_1st) {
 		if (ch1_offset == 0) {
@@ -149,32 +149,32 @@ void AudioOutputI2S::isr(void)
 			release(block_ch1_1st);
 			block_ch1_1st = block_ch1_2nd;
 			block_ch1_2nd = NULL;
-		}
-	}
-	if (block_ch2_1st) {
-		if (ch2_offset == 0) {
-			ch2_offset = AUDIO_BLOCK_SAMPLES/2;
-		} else {
+	// 	}
+	// }
+	// if (block_ch2_1st) {
+	// 	if (ch2_offset == 0) {
+	// 		ch2_offset = AUDIO_BLOCK_SAMPLES/2;
+	// 	} else {
 			ch2_offset = 0;
 			release(block_ch2_1st);
 			block_ch2_1st = block_ch2_2nd;
 			block_ch2_2nd = NULL;
-		}
-	}
-	if (block_ch3_1st) {
-		if (ch3_offset == 0) {
-			ch3_offset = AUDIO_BLOCK_SAMPLES/2;
-		} else {
+	// 	}
+	// }
+	// if (block_ch3_1st) {
+	// 	if (ch3_offset == 0) {
+	// 		ch3_offset = AUDIO_BLOCK_SAMPLES/2;
+	// 	} else {
 			ch3_offset = 0;
 			release(block_ch3_1st);
 			block_ch3_1st = block_ch3_2nd;
 			block_ch3_2nd = NULL;
-		}
-	}
-	if (block_ch4_1st) {
-		if (ch4_offset == 0) {
-			ch4_offset = AUDIO_BLOCK_SAMPLES/2;
-		} else {
+	// 	}
+	// }
+	// if (block_ch4_1st) {
+	// 	if (ch4_offset == 0) {
+	// 		ch4_offset = AUDIO_BLOCK_SAMPLES/2;
+	// 	} else {
 			ch4_offset = 0;
 			release(block_ch4_1st);
 			block_ch4_1st = block_ch4_2nd;
