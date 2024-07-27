@@ -41,10 +41,7 @@
 // https://forum.pjrc.com/threads/65229?p=263104&viewfull=1#post263104
 
 audio_block_t * AudioOutputI2S::block_input[4] = {NULL, NULL, NULL, NULL};
-audio_block_t * AudioOutputI2S::block_ch1_2nd = NULL;
-audio_block_t * AudioOutputI2S::block_ch2_2nd = NULL;
-audio_block_t * AudioOutputI2S::block_ch3_2nd = NULL;
-audio_block_t * AudioOutputI2S::block_ch4_2nd = NULL;
+audio_block_t * AudioOutputI2S::block_previous[4] = {NULL, NULL, NULL, NULL};
 uint16_t  AudioOutputI2S::block_offset[4] = {0, 0, 0, 0};
 bool AudioOutputI2S::update_responsibility = false;
 
@@ -103,7 +100,7 @@ void AudioOutputI2S::begin()
 void AudioOutputI2S::isr(void)
 {
 	uint32_t saddr;
-	const int32_t *src1, *src2, *src3, *src4;
+	const int32_t *src[4];
 	const int32_t *zeros = (const int32_t *)zerodata;
 	int32_t *dest;
 
@@ -118,145 +115,56 @@ void AudioOutputI2S::isr(void)
 		dest = (int32_t *)i2s_tx_buffer;
 	}
 	
-	src1 = (block_input[0]) ? block_input[0]->data + block_offset[0] : zeros;
-	src2 = (block_input[1]) ? block_input[1]->data + block_offset[1] : zeros;
-	src3 = (block_input[2]) ? block_input[2]->data + block_offset[2] : zeros;
-	src4 = (block_input[3]) ? block_input[3]->data + block_offset[3] : zeros;
+
+	// Assign each source to a block input channel
+	for (size_t i=0; i < CHANNELS; i++){
+		src[i] = (block_input[i]) ? block_input[i]->data + block_offset[i] : zeros;
+	}
+	//Serial.println((int32_t)src[0][0]);
 	
 	// important! flush before loop!
 	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
-	//Serial.println((int32_t)src1[0]);
 	
-	// about this code: https://forum.pjrc.com/threads/64508
+	
+	// One destination stream to SD-out of the 4 channels
+	// as 64 32-bit samples 
+	// More about this code: https://forum.pjrc.com/threads/64508
 	for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
-		*dest++ = *src1++;
-		*dest++ = *src2++;
-		*dest++ = *src3++;
-		*dest++ = *src4++;
+		*dest++ = *src[0]++;
+		*dest++ = *src[1]++;
+		*dest++ = *src[2]++;
+		*dest++ = *src[3]++;
 	}
-
 	
-
-	if (block_input[0]) {
-		if (block_offset[0] == 0) {
-			block_offset[0] = AUDIO_BLOCK_SAMPLES/2;
-		} else {
-			block_offset[0] = 0;
-			release(block_input[0]);
-			block_input[0] = block_ch1_2nd;
-			block_ch1_2nd = NULL;
-		}
-	}
-	if (block_input[1]) {
-		if (block_offset[1] == 0) {
-			block_offset[1] = AUDIO_BLOCK_SAMPLES/2;
-		} else {
-			block_offset[1] = 0;
-			release(block_input[1]);
-			block_input[1] = block_ch2_2nd;
-			block_ch2_2nd = NULL;
-		}
-	}
-	if (block_input[2]) {
-		if (block_offset[2] == 0) {
-			block_offset[2] = AUDIO_BLOCK_SAMPLES/2;
-		} else {
-			block_offset[2] = 0;
-			release(block_input[2]);
-			block_input[2] = block_ch3_2nd;
-			block_ch3_2nd = NULL;
-		}
-	}
-	if (block_input[3]) {
-		if (block_offset[3] == 0) {
-			block_offset[3] = AUDIO_BLOCK_SAMPLES/2;
-		} else {
-			block_offset[3] = 0;
-			release(block_input[3]);
-			block_input[3] = block_ch4_2nd;
-			block_ch4_2nd = NULL;
+	for (size_t i=0; i < CHANNELS; i++){
+		if (block_input[i]) {
+			// Wait for second half of the samples to be filled
+			// And set array to 64 onwards
+			if (block_offset[i] == 0) {
+				block_offset[i] = AUDIO_BLOCK_SAMPLES/2;
+			} else {
+				block_offset[i] = 0;
+				release(block_input[i]);
+				block_input[i] = NULL;
+			}
 		}
 	}
 }
 
 void AudioOutputI2S::update(void)
 {
-	audio_block_t *block, *tmp;
+	audio_block_t *block_previous[16];
+	unsigned int i;
 
-	block = receiveReadOnly(0); // channel 1
-	if (block) {
-		__disable_irq();
-		if (block_input[0] == NULL) {
-			block_input[0] = block;
-			block_offset[0] = 0;
-			__enable_irq();
-		} else if (block_ch1_2nd == NULL) {
-			block_ch1_2nd = block;
-			__enable_irq();
-		} else {
-			tmp = block_input[0];
-			block_input[0] = block_ch1_2nd;
-			block_ch1_2nd = block;
-			block_offset[0] = 0;
-			__enable_irq();
-			release(tmp);
-		}
+	__disable_irq();
+	for (i=0; i < 4; i++) {
+		block_previous[i] = block_input[i];
+		block_input[i] = receiveReadOnly(i);
 	}
-	block = receiveReadOnly(1); // channel 2
-	if (block) {
-		__disable_irq();
-		if (block_input[1] == NULL) {
-			block_input[1] = block;
-			block_offset[1] = 0;
-			__enable_irq();
-		} else if (block_ch2_2nd == NULL) {
-			block_ch2_2nd = block;
-			__enable_irq();
-		} else {
-			tmp = block_input[1];
-			block_input[1] = block_ch2_2nd;
-			block_ch2_2nd = block;
-			block_offset[1] = 0;
-			__enable_irq();
-			release(tmp);
-		}
-	}
-	block = receiveReadOnly(2); // channel 3
-	if (block) {
-		__disable_irq();
-		if (block_input[2] == NULL) {
-			block_input[2] = block;
-			block_offset[2] = 0;
-			__enable_irq();
-		} else if (block_ch3_2nd == NULL) {
-			block_ch3_2nd = block;
-			__enable_irq();
-		} else {
-			tmp = block_input[2];
-			block_input[2] = block_ch3_2nd;
-			block_ch3_2nd = block;
-			block_offset[2] = 0;
-			__enable_irq();
-			release(tmp);
-		}
-	}
-	block = receiveReadOnly(3); // channel 4
-	if (block) {
-		__disable_irq();
-		if (block_input[3] == NULL) {
-			block_input[3] = block;
-			block_offset[3] = 0;
-			__enable_irq();
-		} else if (block_ch4_2nd == NULL) {
-			block_ch4_2nd = block;
-			__enable_irq();
-		} else {
-			tmp = block_input[3];
-			block_input[3] = block_ch4_2nd;
-			block_ch4_2nd = block;
-			block_offset[3] = 0;
-			__enable_irq();
-			release(tmp);
+	__enable_irq();
+	for (i=0; i < 4; i++) {
+		if (block_previous[i]) {
+			release(block_previous[i]);
 		}
 	}
 }
