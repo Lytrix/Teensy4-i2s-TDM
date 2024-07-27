@@ -41,10 +41,7 @@ public:
 protected:
 	static void config_i2s(bool only_bclk = false);
 private:
-	static audio_block_t *block_ch1_1st;
-	static audio_block_t *block_ch2_1st;
-	static audio_block_t *block_ch3_1st;
-	static audio_block_t *block_ch4_1st;
+	static audio_block_t *block_input[4];
 	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr(void);
@@ -52,10 +49,7 @@ private:
 	static audio_block_t *block_ch2_2nd;
 	static audio_block_t *block_ch3_2nd;
 	static audio_block_t *block_ch4_2nd;
-	static uint16_t ch1_offset;
-	static uint16_t ch2_offset;
-	static uint16_t ch3_offset;
-	static uint16_t ch4_offset;
+	static uint16_t block_offset[4];
 	audio_block_t *inputQueueArray[4];
 };
 #endif
