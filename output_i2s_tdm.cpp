@@ -30,43 +30,44 @@
 
 #include <Arduino.h>
 #include <cstdlib>
-//#include "AudioConfig.h"
 #include "AudioStream32.h"
 #include "output_i2s_tdm.h"
 #include "input_i2s_tdm.h"
 #include <cmath>
-
-// high-level explanation of how this I2S & DMA code works:
-// https://forum.pjrc.com/threads/65229?p=263104&viewfull=1#post263104
-
-BufferQueue AudioOutputI2S::buffers;
-DMAChannel AudioOutputI2S::dma(false);
-
-void audioCallbackPassthrough(int32_t** inputs, int32_t** outputs)
-{
-	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES; i++)
-	{
-    outputs[0][i] = inputs[0][i];
-		outputs[1][i] = inputs[1][i];
-    
-    if (CHANNELS > 2) {
-      outputs[2][i] = inputs[2][i];
-		  outputs[3][i] = inputs[3][i];
-    }
-  }
-}
-
-void (*i2sAudioCallback)(int32_t** inputs, int32_t** outputs) = audioCallbackPassthrough;
-
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES * CHANNELS];
 #include "utility/imxrt_hw.h"
 #include "imxrt.h"
 #include "i2s_timers.h"
+// high-level explanation of how this I2S & DMA code works:
+// https://forum.pjrc.com/threads/65229?p=263104&viewfull=1#post263104
+
+audio_block_t * AudioOutputI2S::block_ch1_1st = NULL;
+audio_block_t * AudioOutputI2S::block_ch2_1st = NULL;
+audio_block_t * AudioOutputI2S::block_ch3_1st = NULL;
+audio_block_t * AudioOutputI2S::block_ch4_1st = NULL;
+audio_block_t * AudioOutputI2S::block_ch1_2nd = NULL;
+audio_block_t * AudioOutputI2S::block_ch2_2nd = NULL;
+audio_block_t * AudioOutputI2S::block_ch3_2nd = NULL;
+audio_block_t * AudioOutputI2S::block_ch4_2nd = NULL;
+uint16_t  AudioOutputI2S::ch1_offset = 0;
+uint16_t  AudioOutputI2S::ch2_offset = 0;
+uint16_t  AudioOutputI2S::ch3_offset = 0;
+uint16_t  AudioOutputI2S::ch4_offset = 0;
+bool AudioOutputI2S::update_responsibility = false;
+
+DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES * CHANNELS];
+DMAChannel AudioOutputI2S::dma(false);
+
+static const int32_t zerodata[AUDIO_BLOCK_SAMPLES/4] = {0};
 
 void AudioOutputI2S::begin()
 {
 	dma.begin(true); // Allocate the DMA channel first
 	config_i2s();
+
+	block_ch1_1st = NULL;
+	block_ch2_1st = NULL;
+	block_ch3_1st = NULL;
+	block_ch4_1st = NULL;
 
 	// Minor loop = each individual transmission, in this case, 4 bytes of data
 	// Major loop = the buffer size, events can run when we hit the half and end of the major loop
@@ -84,14 +85,15 @@ void AudioOutputI2S::begin()
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR; // Tells the DMA mechanism to trigger interrupt at half and full population of the buffer
 	dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 0); // Destination address. for 16 bit values we use +2 byte offset from the I2S register. for 32 bits we use a zero offset.
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX); // run DMA at hardware event when new I2S data transmitted.
+	update_responsibility = update_setup();
 	dma.enable();
 
 	// Enabled transmitting and receiving
 
   // Receive Control  : Enable resets, interrupt, error flag fields.
-	I2S1_RCSR = 
-    I2S_RCSR_RE       // Receiver Enabled
-  | I2S_RCSR_BCE;     // Receiver Bit Clock Enabled
+// 	I2S1_RCSR = 
+//     I2S_RCSR_RE       // Receiver Enabled
+//   | I2S_RCSR_BCE;     // Receiver Bit Clock Enabled
 
   // Transmit Control : Enable resets, interrupt, error flag fields.
 	I2S1_TCSR = 
@@ -106,69 +108,160 @@ void AudioOutputI2S::begin()
 // process() call again, computing a new block of data
 void AudioOutputI2S::isr(void)
 {
-	uint32_t* dest;
-  int32_t* block[CHANNELS];	
-	uint32_t saddr, offset;
-	bool callUpdate;
+	uint32_t saddr;
+	const int32_t *src1, *src2, *src3, *src4;
+	const int32_t *zeros = (const int32_t *)zerodata;
+	int32_t *dest;
 
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
-	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) 
-	{
+	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		//dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		dest = i2s_tx_buffer + AUDIO_BLOCK_SAMPLES * CHANNELS/2;
-    // dest = (int32_t *)((uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2);
-		callUpdate = true;
-		offset = AUDIO_BLOCK_SAMPLES / 2;
-	}
-	else
-	{
-		// DMA is transmitting the second half of the buffer
-		// so we must fill the first half
-		dest = i2s_tx_buffer;
-		callUpdate = false;
-		offset = 0;
+		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
+		if (update_responsibility) update_all();
+	} else {
+		dest = (int32_t *)i2s_tx_buffer;
 	}
 
-  block[0] = buffers.readPtr[0];
-	block[1] = buffers.readPtr[1];
+	src1 = (block_ch1_1st) ? block_ch1_1st->data + ch1_offset : zeros;
+	src2 = (block_ch2_1st) ? block_ch2_1st->data + ch2_offset : zeros;
+	src3 = (block_ch3_1st) ? block_ch3_1st->data + ch3_offset : zeros;
+	src4 = (block_ch4_1st) ? block_ch4_1st->data + ch4_offset : zeros;
 
-  if (CHANNELS > 2) {
-    block[2] = buffers.readPtr[2];
-	  block[3] = buffers.readPtr[3];
-  }
-
-	for (size_t i = 0; i < AUDIO_BLOCK_SAMPLES/2; i++)
-	{
-		dest[CHANNELS*i + 0] = block[0][i + offset];
-		dest[CHANNELS*i + 1] = block[1][i + offset];
-    
-    if (CHANNELS > 2) {
-      dest[CHANNELS*i + 2] = block[2][i + offset];
-		  dest[CHANNELS*i + 3] = block[3][i + offset];
-    }
-  }
+	//Serial.println((int32_t)src1[0]);
 	
+	// about this code: https://forum.pjrc.com/threads/64508
+	for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
+		*dest++ = *src1++;
+		*dest++ = *src3++;
+		*dest++ = *src2++;
+		*dest++ = *src4++;
+	}
+
 	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2 );
 
-	if (callUpdate)
-	{
-		Timers::ResetFrame();
+	if (block_ch1_1st) {
+		if (ch1_offset == 0) {
+			ch1_offset = AUDIO_BLOCK_SAMPLES/2;
+		} else {
+			ch1_offset = 0;
+			release(block_ch1_1st);
+			block_ch1_1st = block_ch1_2nd;
+			block_ch1_2nd = NULL;
+		}
+	}
+	if (block_ch2_1st) {
+		if (ch2_offset == 0) {
+			ch2_offset = AUDIO_BLOCK_SAMPLES/2;
+		} else {
+			ch2_offset = 0;
+			release(block_ch2_1st);
+			block_ch2_1st = block_ch2_2nd;
+			block_ch2_2nd = NULL;
+		}
+	}
+	if (block_ch3_1st) {
+		if (ch3_offset == 0) {
+			ch3_offset = AUDIO_BLOCK_SAMPLES/2;
+		} else {
+			ch3_offset = 0;
+			release(block_ch3_1st);
+			block_ch3_1st = block_ch3_2nd;
+			block_ch3_2nd = NULL;
+		}
+	}
+	if (block_ch4_1st) {
+		if (ch4_offset == 0) {
+			ch4_offset = AUDIO_BLOCK_SAMPLES/2;
+		} else {
+			ch4_offset = 0;
+			release(block_ch4_1st);
+			block_ch4_1st = block_ch4_2nd;
+			block_ch4_2nd = NULL;
+		}
+	}
+}
 
-		// We've finished reading all the data from the current read block
-		buffers.consume();
+void AudioOutputI2S::update(void)
+{
+	audio_block_t *block, *tmp;
 
-		// Fetch the input samples
-		int32_t** dataInPtr = AudioInputI2S::getData();
-
-		// populate the next block
-		i2sAudioCallback(dataInPtr, buffers.writePtr);
-		// publish the block
-		buffers.publish();
-
-		Timers::LapInner(Timers::TIMER_TOTAL);
+	block = receiveReadOnly(0); // channel 1
+	if (block) {
+		__disable_irq();
+		if (block_ch1_1st == NULL) {
+			block_ch1_1st = block;
+			ch1_offset = 0;
+			__enable_irq();
+		} else if (block_ch1_2nd == NULL) {
+			block_ch1_2nd = block;
+			__enable_irq();
+		} else {
+			tmp = block_ch1_1st;
+			block_ch1_1st = block_ch1_2nd;
+			block_ch1_2nd = block;
+			ch1_offset = 0;
+			__enable_irq();
+			release(tmp);
+		}
+	}
+	block = receiveReadOnly(1); // channel 2
+	if (block) {
+		__disable_irq();
+		if (block_ch2_1st == NULL) {
+			block_ch2_1st = block;
+			ch2_offset = 0;
+			__enable_irq();
+		} else if (block_ch2_2nd == NULL) {
+			block_ch2_2nd = block;
+			__enable_irq();
+		} else {
+			tmp = block_ch2_1st;
+			block_ch2_1st = block_ch2_2nd;
+			block_ch2_2nd = block;
+			ch2_offset = 0;
+			__enable_irq();
+			release(tmp);
+		}
+	}
+	block = receiveReadOnly(2); // channel 3
+	if (block) {
+		__disable_irq();
+		if (block_ch3_1st == NULL) {
+			block_ch3_1st = block;
+			ch3_offset = 0;
+			__enable_irq();
+		} else if (block_ch3_2nd == NULL) {
+			block_ch3_2nd = block;
+			__enable_irq();
+		} else {
+			tmp = block_ch3_1st;
+			block_ch3_1st = block_ch3_2nd;
+			block_ch3_2nd = block;
+			ch3_offset = 0;
+			__enable_irq();
+			release(tmp);
+		}
+	}
+	block = receiveReadOnly(3); // channel 4
+	if (block) {
+		__disable_irq();
+		if (block_ch4_1st == NULL) {
+			block_ch4_1st = block;
+			ch4_offset = 0;
+			__enable_irq();
+		} else if (block_ch4_2nd == NULL) {
+			block_ch4_2nd = block;
+			__enable_irq();
+		} else {
+			tmp = block_ch4_1st;
+			block_ch4_1st = block_ch4_2nd;
+			block_ch4_2nd = block;
+			ch4_offset = 0;
+			__enable_irq();
+			release(tmp);
+		}
 	}
 }
 

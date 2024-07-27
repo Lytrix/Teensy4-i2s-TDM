@@ -26,7 +26,6 @@
 
 #include <Arduino.h>
 #include "input_i2s_tdm.h"
-#include "AudioStream32.h"
 #include "output_i2s_tdm.h"
 
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES*4];
@@ -37,8 +36,6 @@ audio_block_t * AudioInputI2S::block_ch4 = NULL;
 uint16_t AudioInputI2S::block_offset = 0;
 bool AudioInputI2S::update_responsibility = false;
 DMAChannel AudioInputI2S::dma(false);
-int32_t* outBuffers[4];
-BufferQueue AudioInputI2S::buffers;
 
 #if defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
 
@@ -46,18 +43,6 @@ void AudioInputI2S::begin(void)
 {
 	dma.begin(true); // Allocate the DMA channel first
 
-#if defined(KINETISK)
-	// TODO: should we set & clear the I2S_RCSR_SR bit here?
-	AudioOutputI2SQuad::config_i2s();
-
-	CORE_PIN13_CONFIG = PORT_PCR_MUX(4); // pin 13, PTC5, I2S0_RXD0
-#if defined(__MK20DX256__)
-	CORE_PIN30_CONFIG = PORT_PCR_MUX(4); // pin 30, PTC11, I2S0_RXD1
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
-	CORE_PIN38_CONFIG = PORT_PCR_MUX(4); // pin 38, PTC11, I2S0_RXD1
-#endif
-
-#elif defined(__IMXRT1062__)
 	//const int pinoffset = 0; // TODO: make this configurable...
 	AudioOutputI2S::config_i2s();
 	dma.begin(true); // Allocate the DMA channel first
@@ -84,21 +69,7 @@ void AudioInputI2S::begin(void)
 	update_responsibility = update_setup();
 	dma.enable();
 	dma.attachInterrupt(isr);
-#endif
 }
-
-int32_t** AudioInputI2S::getData()
-{
-	outBuffers[0] = buffers.readPtr[0]; 
-  outBuffers[1] = buffers.readPtr[1]; 
-  if (CHANNELS > 2) {
-    outBuffers[2] = buffers.readPtr[2]; 
-    outBuffers[3] = buffers.readPtr[3]; 
-  }
-	buffers.consume();
-	return outBuffers;
-}
-
 
 void AudioInputI2S::isr(void)
 {
