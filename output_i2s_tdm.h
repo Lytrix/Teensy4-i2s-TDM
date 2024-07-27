@@ -24,24 +24,38 @@
  * THE SOFTWARE.
  */
 
-#pragma once
+#ifndef output_i2s_tdm_h_
+#define output_i2s_tdm_h_
 
 #include <Arduino.h>
 #include <DMAChannel.h>
-#include "buffer_queue.h"
+#include "AudioStream32.h"
 
-extern void (*i2sAudioCallback)(int32_t** inputs, int32_t** outputs);
-
-class AudioOutputI2S
+class AudioOutputI2S : public AudioStream
 {
 public:
-	AudioOutputI2S(void) { }
+	AudioOutputI2S(void) : AudioStream(4, inputQueueArray) { begin(); }
+	virtual void update(void);
 	void begin(void);
 	friend class AudioInputI2S;
-
 protected:
 	static void config_i2s(bool only_bclk = false);
-	static BufferQueue buffers;
+private:
+	static audio_block_t *block_ch1_1st;
+	static audio_block_t *block_ch2_1st;
+	static audio_block_t *block_ch3_1st;
+	static audio_block_t *block_ch4_1st;
+	static bool update_responsibility;
 	static DMAChannel dma;
 	static void isr(void);
+	static audio_block_t *block_ch1_2nd;
+	static audio_block_t *block_ch2_2nd;
+	static audio_block_t *block_ch3_2nd;
+	static audio_block_t *block_ch4_2nd;
+	static uint16_t ch1_offset;
+	static uint16_t ch2_offset;
+	static uint16_t ch3_offset;
+	static uint16_t ch4_offset;
+	audio_block_t *inputQueueArray[4];
 };
+#endif

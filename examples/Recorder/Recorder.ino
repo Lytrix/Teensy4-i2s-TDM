@@ -15,7 +15,6 @@
 #include <SPI.h>
 #include <SD.h>
 #include <SerialFlash.h>
-#include "AudioStream32.h"
 #include "output_i2s_tdm.h"
 #include "input_i2s_tdm.h"
 #include "record_queue1.h"
