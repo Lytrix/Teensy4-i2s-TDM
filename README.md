@@ -1,9 +1,7 @@
 Teensy 4.x I2S TDM Library
 ==========================
 
-This is a no-nonsense up to 32-bit 192khz I2S library for the Teensy 4 and 4.1 with TDM functionallity forked from the code of ValdermarOrn https://github.com/ValdemarOrn/Teensy4i2s
-
-It was derived from the I2S code in Paul Stoffregen's [Teensy Audio Library](https://github.com/PaulStoffregen/Audio) but has been stripped down to the bare minimum I2S code and some basic support mechanisms like DMA by Valdermar0rn.
+This a partial port of Paul Stoffregen's [Teensy Audio Library](https://github.com/PaulStoffregen/Audio) which is converted to 32-bit audio instead of 16-bit.
 
 The [AK4619VN Codec library](https://github.com/Lytrix/ak4619vn) is forked from the code created by Trimmenz for ESP32 boards and modified to work with a Teensy.
 
@@ -22,18 +20,7 @@ Download this repo as a zip and add the zip file as a zip library in Arduino IDE
 ## Examples
 
 - Passthrough       : 4 in goes to 4 out via buffer
-- Basic processing  : Adds sine wave to input)
-- Recorder          : Record a 32-bit wav file to SD card
-
-## Features
-
-* 2 channel i2s
-* 4 channel TDM (more channels can be added by duplicating the channel logic in input_i2s.cpp, output_i2s.cpp and buffer_queue.h)
-* 16/24/32 Bit, 44.1/48/96/192 Khz audio processing
-* Completely stand-alone library, does not depend on the Teensy Audio library.
-* Retains some of the Codec controllers from the Audio Library like DMA.
-* Adds codec controller for TI TLV320AIC3204
-* Adds codec controller for AK4619VN
+- Recorder          : Record a 32-bit RAW file to SD card
 
 ## Pinout
 
@@ -77,5 +64,5 @@ At 192khz 128fs:
 
 ## Notes
 
-Please note that the library always transmits and receives 32 bits between the codec and Teensy. Please ensure you shift your input and output values appropriately in code to work at your desired bit depth.
+Please note that the library always transmits and receives 32 bits between the codec and Teensy. Please ensure you shift your input and output values appropriately in code to work at your desired bit depth if needed.
 For example, for 24 bit data, you must multiply output data by 256, or left-shift by 8 bits. Similarly, for input data, you must right shift by 8 bits or divide by 256 to obtain a 24 bit value.
