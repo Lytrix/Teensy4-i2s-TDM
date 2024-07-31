@@ -3,7 +3,10 @@ Teensy 4.x I2S TDM Library
 
 This is a no-nonsense up to 32-bit 192khz I2S library for the Teensy 4 and 4.1 with TDM functionallity forked from the code of ValdermarOrn https://github.com/ValdemarOrn/Teensy4i2s
 
-It was derived from the I2S code in Paul Stoffregen's [Teensy Audio Library](https://github.com/PaulStoffregen/Audio) but has been stripped down to the bare minimum I2S code and some basic support mechanisms like DMA by Valdermar0rn.
+It was derived from the I2S code in Paul Stoffregen's [Teensy Audio Library](https://github.com/PaulStoffregen/Audio) but has been stripped down to the bare minimum I2S code and some basic support mechanisms like DMA by Valdermar0rn. 
+
+A first working version using the Audio Library is a WIP branch, which can be found here: 
+https://github.com/Lytrix/Teensy4-i2s-TDM/tree/teensy-audio32bit-wip
 
 The [AK4619VN Codec library](https://github.com/Lytrix/ak4619vn) is forked from the code created by Trimmenz for ESP32 boards and modified to work with a Teensy.
 
