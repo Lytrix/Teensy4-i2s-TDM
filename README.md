@@ -1,9 +1,12 @@
-Teensy 4.x I2S TDM Library
-==========================
+Teensy 4.x I2S TDM Audio Library 24/32 bit for AK4619 codec
+===========================================================
 
 This a partial port of Paul Stoffregen's [Teensy Audio Library](https://github.com/PaulStoffregen/Audio) which is converted to 32-bit audio instead of 16-bit.
 
 The [AK4619VN Codec library](https://github.com/Lytrix/ak4619vn) is forked from the code created by Trimmenz for ESP32 boards and modified to work with a Teensy.
+
+A bare bones working version (basic processing, passthrough and wav recording) not using the Audio library can be found in this branch:
+https://github.com/Lytrix/Teensy4-i2s-TDM
 
 The WavWrite.h code is forked from the Electro-Smith libDaisy example code [WavWrite.h](https://github.com/electro-smith/libDaisy/blob/f7727edb9a1febdd174b5310a7bc65340dae8700/src/util/WavWriter.h).
 
