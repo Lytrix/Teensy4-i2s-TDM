@@ -12,7 +12,7 @@ The WavWrite.h code is forked from the Electro-Smith libDaisy example code [WavW
 
 ## Goal
 
-My use case for extending this Teensy i2s library with 4 channel in/out AK4619 support is to build a 4 channel in/out eurorack audio looper using the awesome [Apfelaudio eurorack pmod module](https://apfelaudio.com/modules/)
+My use case for extending this Teensy i2s library with 4 channel in/out AK4619 support is to build a 4 channel in/out eurorack audio looper using the awesome [Apfelaudio eurorack pmod module]([https://apfelaudio.com/modules/](https://apf.audio/modules/current/pmod/)
 
 ![Image](images/apfelaudio_pmod_with_teensy.jpg)
 
